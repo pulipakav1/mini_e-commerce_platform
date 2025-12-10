@@ -127,7 +127,6 @@ $profile_pic = isset($user['upload_profile']) && $user['upload_profile'] ? $user
 <!-- BOTTOM MENU -->
 <div class="bottom-menu">
     <a href="home.php"><br>Home</a>
-    <a href="wishlist.php"><br>Wishlist</a>
     <a href="profile.php" class="active"><br>Profile</a>
 </div>
 

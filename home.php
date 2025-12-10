@@ -234,7 +234,6 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
 <!-- BOTTOM NAVIGATION -->
 <div class="bottom-menu">
     <a href="home.php" class="active"><span>Home</span></a>
-    <a href="wishlist.php"><span>Wishlist</span></a>
     <a href="profile.php"><span>Profile</span></a>
 </div>
 

@@ -106,7 +106,6 @@ while($product = $product_query->fetch_assoc()) {
 
 <div class="bottom-menu">
     <a href="home.php"><span>Home</span></a>
-    <a href="wishlist.php"><span>Wishlist</span></a>
     <a href="profile.php"><span>Profile</span></a>
 </div>
 
