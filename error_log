@@ -1,0 +1,50 @@
+[09-Dec-2025 18:06:44 UTC] PHP Warning:  include(db.php): failed to open stream: No such file or directory in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:44 UTC] PHP Warning:  include(): Failed opening 'db.php' for inclusion (include_path='.:/opt/cpanel/ea-php73/root/usr/share/pear') in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:50 UTC] PHP Warning:  include(db.php): failed to open stream: No such file or directory in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:50 UTC] PHP Warning:  include(): Failed opening 'db.php' for inclusion (include_path='.:/opt/cpanel/ea-php73/root/usr/share/pear') in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:50 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/amudalj1/public_html/login_pages.html/public/pages/login.php:12
+Stack trace:
+#0 {main}
+  thrown in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 12
+[09-Dec-2025 18:06:55 UTC] PHP Warning:  include(db.php): failed to open stream: No such file or directory in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:55 UTC] PHP Warning:  include(): Failed opening 'db.php' for inclusion (include_path='.:/opt/cpanel/ea-php73/root/usr/share/pear') in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 3
+[09-Dec-2025 18:06:55 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/amudalj1/public_html/login_pages.html/public/pages/login.php:12
+Stack trace:
+#0 {main}
+  thrown in /home/amudalj1/public_html/login_pages.html/public/pages/login.php on line 12
+[10-Dec-2025 07:32:36 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 13
+[10-Dec-2025 07:32:36 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 205
+[10-Dec-2025 07:35:20 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 179
+[10-Dec-2025 07:35:50 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 179
+[10-Dec-2025 07:45:01 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 16
+[10-Dec-2025 07:45:01 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 99
+[10-Dec-2025 07:45:05 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 16
+[10-Dec-2025 07:45:05 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 99
+[10-Dec-2025 07:45:10 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 16
+[10-Dec-2025 07:45:10 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 99
+[10-Dec-2025 07:45:13 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 16
+[10-Dec-2025 07:45:13 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 99
+[10-Dec-2025 07:45:17 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 16
+[10-Dec-2025 07:45:17 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/category.php on line 99
+[10-Dec-2025 07:52:48 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 13
+[10-Dec-2025 07:56:30 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/cups_bottles.php on line 13
+[10-Dec-2025 07:56:36 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 13
+[10-Dec-2025 07:56:41 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 08:04:26 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/cups_bottles.php on line 12
+[10-Dec-2025 08:04:30 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 08:04:36 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/tulip_collection.php on line 13
+[10-Dec-2025 08:17:42 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 9
+[10-Dec-2025 08:21:26 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 9
+[10-Dec-2025 08:22:15 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 9
+[10-Dec-2025 08:23:21 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 13
+[10-Dec-2025 08:26:15 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home.php on line 13
+[10-Dec-2025 08:30:36 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 9
+[10-Dec-2025 18:33:31 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/indoor_plants.php on line 13
+[10-Dec-2025 18:34:03 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 18:34:14 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/home_living.php on line 9
+[10-Dec-2025 18:35:04 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/cups_bottles.php on line 12
+[10-Dec-2025 18:56:07 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 18:56:11 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 19:05:21 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 19:05:23 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/style_accessories.php on line 13
+[10-Dec-2025 19:05:53 UTC] PHP Warning:  mysqli_fetch_assoc() expects parameter 1 to be mysqli_result, bool given in /home/amudalj1/public_html/login_pages.html/tulip_collection.php on line 13
