@@ -86,56 +86,52 @@ $result_orders = $stmt->get_result();
     <table>
         <tr>
             <th>Order ID</th>
-            <th>Product</th>
-            <th>Price ($)</th>
-            <th>Quantity</th>
-            <th>Status</th>
             <th>Order Date</th>
+            <th>Receipt Number</th>
+            <th>Total Amount</th>
+            <th>Products</th>
+            <th>Status</th>
         </tr>
 
         <?php
         if ($result_orders->num_rows > 0) {
             while ($order = $result_orders->fetch_assoc()) {
-                $items_stmt = $conn->prepare("SELECT oi.quantity, oi.unit_price, p.product_name FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
-                $items_stmt->bind_param("i", $order['order_id']);
-                $items_stmt->execute();
-                $items_result = $items_stmt->get_result();
-                
+                // Get receipt number
                 $receipt_stmt = $conn->prepare("SELECT receipt_number FROM receipts WHERE order_id = ?");
                 $receipt_stmt->bind_param("i", $order['order_id']);
                 $receipt_stmt->execute();
                 $receipt_result = $receipt_stmt->get_result();
                 $receipt = $receipt_result->fetch_assoc();
                 $receipt_number = $receipt ? $receipt['receipt_number'] : 'N/A';
+                $receipt_stmt->close();
                 
-                echo "<tr style='background:#f0f0f0; font-weight:bold;'>";
-                echo "<td colspan='6' style='padding:15px; border:2px solid #1d4ed8;'>";
-                echo "Order #" . htmlspecialchars($order['order_id']) . " | ";
-                echo "Receipt: " . htmlspecialchars($receipt_number) . " | ";
-                echo "Date: " . date('F j, Y g:i A', strtotime($order['order_date'])) . " | ";
-                echo "Total: $" . number_format($order['total_amount'], 2);
-                echo "</td>";
-                echo "</tr>";
+                // Get order items
+                $items_stmt = $conn->prepare("SELECT oi.quantity, oi.unit_price, p.product_name FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
+                $items_stmt->bind_param("i", $order['order_id']);
+                $items_stmt->execute();
+                $items_result = $items_stmt->get_result();
                 
-                if ($items_result->num_rows > 0) {
-                    while ($item = $items_result->fetch_assoc()) {
-                        echo "<tr>
-                                <td>-</td>
-                                <td>".htmlspecialchars($item['product_name'])."</td>
-                                <td>$".number_format($item['unit_price'], 2)."</td>
-                                <td>".htmlspecialchars($item['quantity'])."</td>
-                                <td>Completed</td>
-                                <td>-</td>
-                              </tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='6'>No items</td></tr>";
+                // Build products list
+                $products_list = array();
+                while ($item = $items_result->fetch_assoc()) {
+                    $products_list[] = htmlspecialchars($item['product_name']) . " (Qty: " . $item['quantity'] . ")";
                 }
+                $items_stmt->close();
                 
-                echo "<tr><td colspan='6' style='height:20px; border:none;'></td></tr>";
+                $products_display = !empty($products_list) ? implode(", ", $products_list) : "No products";
+                $order_date_formatted = $order['order_date'] ? date('F j, Y g:i A', strtotime($order['order_date'])) : 'N/A';
+                
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($order['order_id']) . "</td>";
+                echo "<td>" . htmlspecialchars($order_date_formatted) . "</td>";
+                echo "<td>" . htmlspecialchars($receipt_number) . "</td>";
+                echo "<td>$" . number_format($order['total_amount'], 2) . "</td>";
+                echo "<td>" . htmlspecialchars($products_display) . "</td>";
+                echo "<td>Completed</td>";
+                echo "</tr>";
             }
         } else {
-            echo "<tr><td colspan='6'>No orders</td></tr>";
+            echo "<tr><td colspan='6' style='text-align:center; padding:20px;'>No orders found</td></tr>";
         }
         ?>
     </table>

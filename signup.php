@@ -1,10 +1,12 @@
-
 <?php
+// Start output buffering to prevent any output from interfering with redirect
+ob_start();
 session_start();
 include 'db.php';
 
 // If user is already logged in, redirect to home
 if (isset($_SESSION['user_id'])) {
+    ob_end_clean();
     header("Location: home.php");
     exit();
 }
@@ -54,15 +56,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->bind_param("ssssssss", $username, $fullname, $role, $phone, $shipping_address, $billing_address, $email, $hashed);
 
         if ($stmt->execute()) {
-            // Redirect to login page after successful signup
+            $stmt->close();
+            // Clear output buffer and redirect to login page after successful signup
+            ob_end_clean();
             header("Location: login.php?signup=success");
             exit();
         } else {
             $error = "Registration failed: " . $stmt->error;
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
+
+// End output buffering if we reach here (no redirect happened)
+ob_end_flush();
 ?>
 
 <!DOCTYPE html>

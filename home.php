@@ -64,7 +64,7 @@ if (!$category_query) {
     }
 
     .logo-text {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: bold;
         color: #1d4ed8;
     }
@@ -74,24 +74,25 @@ if (!$category_query) {
         display: flex;
         align-items: center;
         background: #f1f3f5;
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 4px 8px;
-        width: 600px; /* slightly bigger */
+        width: 400px;
     }
 
     .search-box input {
         border: none;
         background: transparent;
         outline: none;
-        font-size: 14px;
+        font-size: 13px;
         width: 100%;
         padding: 4px 6px;
     }
 
     .search-icon {
-        font-size: 18px;
+        font-size: 14px;
         margin-left: 4px;
         cursor: pointer;
+        color: #666;
     }
 
     /* Top-right items */
@@ -103,12 +104,12 @@ if (!$category_query) {
     }
 
     .order-icon {
-        font-size: 22px;
+        font-size: 14px;
         cursor: pointer;
         text-decoration: none;
         color: #1d4ed8;
-        padding: 8px;
-        border-radius: 50%;
+        padding: 6px 8px;
+        border-radius: 6px;
         transition: 0.3s;
     }
 
@@ -117,7 +118,7 @@ if (!$category_query) {
     }
 
     .user-name {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
         color: #333;
     }
@@ -205,9 +206,9 @@ if (!$category_query) {
 
 <!-- CATEGORIES SECTION -->
 <div class="categories-container" style="padding: 20px;">
-    <div style="text-align:center; margin-bottom: 20px;">
-        <h2 style="margin-bottom: 15px;">Shop by Category</h2>
-        <a href="education.php" style="display:inline-block; padding:10px 20px; background:#1d4ed8; color:white; text-decoration:none; border-radius:8px; margin-bottom:15px;">Learn About Tulips</a>
+    <div style="text-align:center; margin-bottom: 30px;">
+        <a href="education.php" style="display:inline-block; padding:12px 24px; background:#1d4ed8; color:white; text-decoration:none; border-radius:8px; margin-bottom:20px; font-size:16px; font-weight:bold;">Learn About Tulips</a>
+        <h2 style="margin-top: 20px; margin-bottom: 15px;">Shop by Category</h2>
     </div>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
         <?php 

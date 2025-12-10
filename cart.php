@@ -89,6 +89,7 @@ $cart_stmt = $conn->prepare("
     FROM cart c
     JOIN products p ON c.product_id = p.product_id
     WHERE c.user_id = ?
+    ORDER BY c.cart_id DESC
 ");
 $cart_stmt->bind_param("i", $user_id);
 $cart_stmt->execute();
@@ -110,8 +111,9 @@ h2 { text-align: center; color: #1d4ed8; margin-bottom: 20px; }
 .success { background: #d4edda; color: #155724; }
 .error { background: #f8d7da; color: #721c24; }
 table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
 th { background: #1d4ed8; color: white; }
+img { max-width: 100px; max-height: 100px; object-fit: cover; }
 input[type="number"] { width: 60px; padding: 5px; }
 .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
 .btn-danger { background: #ef4444; color: white; }
@@ -144,6 +146,7 @@ input[type="number"] { width: 60px; padding: 5px; }
             <table>
                 <thead>
                     <tr>
+                        <th>Image</th>
                         <th>Product</th>
                         <th>Price</th>
                         <th>Quantity</th>
@@ -156,8 +159,18 @@ input[type="number"] { width: 60px; padding: 5px; }
                     <?php while ($item = $cart_result->fetch_assoc()): 
                         $subtotal = $item['cost'] * $item['quantity'];
                         $total_amount += $subtotal;
+                        
+                        // Get product image
+                        $img_stmt = $conn->prepare("SELECT file_path FROM images WHERE product_id=? LIMIT 1");
+                        $img_stmt->bind_param("i", $item['product_id']);
+                        $img_stmt->execute();
+                        $img_result = $img_stmt->get_result();
+                        $img_data = $img_result->fetch_assoc();
+                        $product_img = $img_data['file_path'] ?? 'images/placeholder.png';
+                        $img_stmt->close();
                     ?>
                         <tr>
+                            <td><img src="<?php echo htmlspecialchars($product_img); ?>" alt="<?php echo htmlspecialchars($item['product_name']); ?>" style="width:80px; height:80px; object-fit:cover; border-radius:8px;"></td>
                             <td><?php echo htmlspecialchars($item['product_name']); ?></td>
                             <td>$<?php echo number_format($item['cost'], 2); ?></td>
                             <td>
