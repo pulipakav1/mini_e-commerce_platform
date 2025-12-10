@@ -33,14 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->close();
     }
 
-    // Insert if no error (matching tables.sql schema: user_id, user_name, name, role, phone_number, shipping_address, billing_address)
-    // Note: Schema shows no email/password fields - if these exist in actual DB, add them
+    // Insert user (matching tables.sql schema)
+    // Schema: user_id (auto), user_name, name, role, phone_number, shipping_address, billing_address
+    // Adding email and password fields which are needed for authentication
     if ($error == "") {
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         $role = 'client'; // Default role as per schema
 
-        // Schema has: user_id (auto), user_name, name, role, phone_number, shipping_address, billing_address
-        // If actual DB has email/password fields, uncomment and add to INSERT
+        // Insert with all required fields - email and password needed for login
         $stmt = $conn->prepare(
             "INSERT INTO users (user_name, name, role, phone_number, shipping_address, billing_address, email, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );

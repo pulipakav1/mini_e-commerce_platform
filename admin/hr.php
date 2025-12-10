@@ -17,8 +17,8 @@ if ($admin_role != 'owner' && $admin_role != 'business_manager') {
     exit();
 }
 
-// Fetch employees
-$sql = "SELECT id, admin_userid, role, email FROM admins";
+// Fetch employees (using employees table)
+$sql = "SELECT employee_id, employee_userid, employee_type, email, salary FROM employees";
 $result = $conn->query($sql);
 
 ?>
@@ -110,15 +110,15 @@ $result = $conn->query($sql);
         <tbody>
             <?php while ($row = $result->fetch_assoc()) { ?>
             <tr>
-                <td><?php echo $row['id']; ?></td>
-                <td><?php echo htmlspecialchars($row['admin_userid']); ?></td>
-                <td><?php echo htmlspecialchars($row['role']); ?></td>
-                 <td><?php echo htmlspecialchars($row['email']); ?></td>
+                <td><?php echo $row['employee_id']; ?></td>
+                <td><?php echo htmlspecialchars($row['employee_userid']); ?></td>
+                <td><?php echo htmlspecialchars($row['employee_type']); ?></td>
+                <td><?php echo htmlspecialchars($row['email'] ?? 'N/A'); ?></td>
                 <td>
-                    <a href="view_employee.php?id=<?php echo $row['id']; ?>" class="action-btn">View</a>
+                    <a href="view_employee.php?id=<?php echo $row['employee_id']; ?>" class="action-btn">View</a>
                     <?php if ($admin_role == 'owner') { ?>
-                        <a href="edit_employee.php?id=<?php echo $row['id']; ?>" class="action-btn">Edit</a>
-                        <a href="delete_employee.php?id=<?php echo $row['id']; ?>" class="action-btn"
+                        <a href="edit_employee.php?id=<?php echo $row['employee_id']; ?>" class="action-btn">Edit</a>
+                        <a href="delete_employee.php?id=<?php echo $row['employee_id']; ?>" class="action-btn"
                            onclick="return confirm('Are you sure you want to delete this employee?');">Delete</a>
                     <?php } ?>
                 </td>

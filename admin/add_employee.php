@@ -18,8 +18,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
     // Default password
     $default_password = password_hash('ChangeMe123', PASSWORD_DEFAULT);
 
-    // INSERT without id (auto-increment)
-    $sql = "INSERT INTO admins (admin_userid, role, email, salary, admin_password) VALUES (?, ?, ?, ?, ?)";
+    // Insert into employees table (employee_id auto-increments)
+    // employees table: employee_id, employee_userid, employee_type, email, salary, hire_date, employee_password
+    $sql = "INSERT INTO employees (employee_userid, employee_type, email, salary, employee_password, hire_date) VALUES (?, ?, ?, ?, ?, CURDATE())";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("SQL Prepare Failed: " . $conn->error);

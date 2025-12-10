@@ -17,7 +17,7 @@ if ($_SESSION['admin_role'] != 'owner') {
 // Fetch report data
 $productCount = $conn->query("SELECT COUNT(*) as count FROM products")->fetch_assoc()['count'];
 $orderCount = $conn->query("SELECT COUNT(*) as count FROM orders")->fetch_assoc()['count'];
-$employeeCount = $conn->query("SELECT COUNT(*) as count FROM admins")->fetch_assoc()['count']; // use admins table
+$employeeCount = $conn->query("SELECT COUNT(*) as count FROM employees")->fetch_assoc()['count'];
 ?>
 
 <!DOCTYPE html>

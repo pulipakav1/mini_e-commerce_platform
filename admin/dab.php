@@ -1,37 +1,24 @@
 <?php
-// Connect to your database
-$host = "localhost:3306";
-$user = "amudalj1_Jithu"; 
-$pass = "Jithu@123";  
-$dbname = "amudalj1_Jithu";
+include '../db.php';
 
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+$admin_userid = 'admin';
+$admin_password = 'password123';
+$role = 'owner';
+$email = 'admin@example.com';
+$salary = 50000;
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-// Admin credentials
-$admin_userid = 'admin';  // Admin username
-$admin_password = 'password123';  // Admin plain password
-$role = 'owner';  // Admin role
-
-// Hash the password before storing it
 $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
 
-// Insert the admin into the database
-$sql = "INSERT INTO admins (admin_userid, admin_password, role) VALUES (?, ?, ?)";
+$sql = "INSERT INTO employees (employee_userid, employee_password, employee_type, email, salary, hire_date) VALUES (?, ?, ?, ?, ?, CURDATE())";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("sss", $admin_userid, $hashed_password, $role);
+$stmt->bind_param("ssssd", $admin_userid, $hashed_password, $role, $email, $salary);
 
 if ($stmt->execute()) {
-    echo "Admin user added successfully!";
+    echo "Admin account created. Username: admin, Password: password123";
+    echo "<br>DELETE THIS FILE (admin/dab.php) FOR SECURITY!";
 } else {
     echo "Error: " . $stmt->error;
 }
 
 $stmt->close();
-$conn->close();
 ?>

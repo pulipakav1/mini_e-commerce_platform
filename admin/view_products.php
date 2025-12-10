@@ -11,16 +11,20 @@ if (!isset($_SESSION['admin_id'])) {
 // Handle deletion
 if (isset($_GET['delete_id'])) {
     $delete_id = intval($_GET['delete_id']);
-    // Delete image first
-    $img_query = $conn->prepare("SELECT product_image FROM products WHERE product_id=?");
+    // Delete images from images table first
+    $img_query = $conn->prepare("SELECT file_path FROM images WHERE product_id=?");
     $img_query->bind_param("i", $delete_id);
     $img_query->execute();
     $img_result = $img_query->get_result();
-    if ($img_row = $img_result->fetch_assoc()) {
-        if (file_exists('../' . $img_row['product_image'])) {
-            unlink('../' . $img_row['product_image']);
+    while ($img_row = $img_result->fetch_assoc()) {
+        if (!empty($img_row['file_path']) && file_exists('../' . $img_row['file_path'])) {
+            unlink('../' . $img_row['file_path']);
         }
     }
+    // Delete from images table
+    $del_img = $conn->prepare("DELETE FROM images WHERE product_id=?");
+    $del_img->bind_param("i", $delete_id);
+    $del_img->execute();
 
     $stmt = $conn->prepare("DELETE FROM products WHERE product_id=?");
     $stmt->bind_param("i", $delete_id);
@@ -74,7 +78,21 @@ img { max-width:100px; max-height:80px; }
                 <td><?php echo $row['product_id']; ?></td>
                 <td><?php echo htmlspecialchars($row['product_name']); ?></td>
                 <td><?php echo htmlspecialchars($row['product_description']); ?></td>
-                <td><img src="../<?php echo $row['product_image']; ?>" alt="Product Image"></td>
+                <td>
+                    <?php 
+                    // Get image from images table
+                    $prod_img = $conn->prepare("SELECT file_path FROM images WHERE product_id=? LIMIT 1");
+                    $prod_img->bind_param("i", $row['product_id']);
+                    $prod_img->execute();
+                    $prod_img_result = $prod_img->get_result();
+                    $prod_img_data = $prod_img_result->fetch_assoc();
+                    if($prod_img_data && !empty($prod_img_data['file_path'])): 
+                    ?>
+                        <img src="../<?php echo htmlspecialchars($prod_img_data['file_path']); ?>" alt="Product Image">
+                    <?php else: ?>
+                        N/A
+                    <?php endif; ?>
+                </td>
                 <td><?php echo $row['category_id']; ?></td>
                 <td><?php echo $row['cost']; ?></td>
                 <td><?php echo $row['quantity']; ?></td>

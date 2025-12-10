@@ -100,37 +100,47 @@ $result_orders = $stmt->get_result();
 
         <?php
         if ($result_orders->num_rows > 0) {
-            // Orders table has order_id, user_id, order_date, shipping_address, billing_address, total_amount
-            // Need to join with order_items to get product details
             while ($order = $result_orders->fetch_assoc()) {
-                // Fetch order items for this order
                 $items_stmt = $conn->prepare("SELECT oi.quantity, oi.unit_price, p.product_name FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?");
                 $items_stmt->bind_param("i", $order['order_id']);
                 $items_stmt->execute();
                 $items_result = $items_stmt->get_result();
                 
+                $receipt_stmt = $conn->prepare("SELECT receipt_number FROM receipts WHERE order_id = ?");
+                $receipt_stmt->bind_param("i", $order['order_id']);
+                $receipt_stmt->execute();
+                $receipt_result = $receipt_stmt->get_result();
+                $receipt = $receipt_result->fetch_assoc();
+                $receipt_number = $receipt ? $receipt['receipt_number'] : 'N/A';
+                
+                echo "<tr style='background:#f0f0f0; font-weight:bold;'>";
+                echo "<td colspan='6' style='padding:15px; border:2px solid #1d4ed8;'>";
+                echo "Order #" . htmlspecialchars($order['order_id']) . " | ";
+                echo "Receipt: " . htmlspecialchars($receipt_number) . " | ";
+                echo "Date: " . date('F j, Y g:i A', strtotime($order['order_date'])) . " | ";
+                echo "Total: $" . number_format($order['total_amount'], 2);
+                echo "</td>";
+                echo "</tr>";
+                
                 if ($items_result->num_rows > 0) {
                     while ($item = $items_result->fetch_assoc()) {
                         echo "<tr>
-                                <td>".htmlspecialchars($order['order_id'])."</td>
+                                <td>-</td>
                                 <td>".htmlspecialchars($item['product_name'])."</td>
                                 <td>$".number_format($item['unit_price'], 2)."</td>
                                 <td>".htmlspecialchars($item['quantity'])."</td>
                                 <td>Completed</td>
-                                <td>".htmlspecialchars($order['order_date'])."</td>
+                                <td>-</td>
                               </tr>";
                     }
                 } else {
-                    // If no items, show order header
-                    echo "<tr>
-                            <td>".htmlspecialchars($order['order_id'])."</td>
-                            <td colspan='4'>No items in this order</td>
-                            <td>".htmlspecialchars($order['order_date'])."</td>
-                          </tr>";
+                    echo "<tr><td colspan='6'>No items</td></tr>";
                 }
+                
+                echo "<tr><td colspan='6' style='height:20px; border:none;'></td></tr>";
             }
         } else {
-            echo "<tr><td colspan='6'>No orders found</td></tr>";
+            echo "<tr><td colspan='6'>No orders</td></tr>";
         }
         ?>
     </table>

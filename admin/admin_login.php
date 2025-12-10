@@ -8,28 +8,25 @@ $error = ""; // Variable to store login error message
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
     $admin_userid = trim($_POST['admin_userid']); // Get the admin_userid from the form
 
-    // Prepare SQL statement to check if the admin exists
-    $sql = "SELECT * FROM admins WHERE admin_userid = ?";
+    // Prepare SQL statement to check if the employee exists (using employees table)
+    $sql = "SELECT * FROM employees WHERE employee_userid = ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("SQL Prepare Failed: " . $conn->error);
     }
-    $stmt->bind_param("s", $admin_userid); // Bind admin_userid to the query
+    $stmt->bind_param("s", $admin_userid); // Bind employee_userid to the query
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows == 1) { // Check if the admin exists
-        $row = $result->fetch_assoc(); // Fetch admin data
+    if ($result->num_rows == 1) { // Check if the employee exists
+        $row = $result->fetch_assoc(); // Fetch employee data
 
-        // Set session variables for admin info
-        $_SESSION['admin_id'] = $row['id'];
-        $_SESSION['admin_userid'] = $row['admin_userid'];
-        $_SESSION['admin_role'] = $row['role']; // e.g., employee, manager, owner
-        if (isset($row['admin_name'])) {
-            $_SESSION['admin_name'] = $row['admin_name']; // Store the admin's name
-        }
-        if (isset($row['admin_email'])) {
-            $_SESSION['admin_email'] = $row['admin_email']; // Store the admin's email
+        // Set session variables for employee info
+        $_SESSION['admin_id'] = $row['employee_id'];
+        $_SESSION['admin_userid'] = $row['employee_userid'];
+        $_SESSION['admin_role'] = $row['employee_type']; // employee_type is the role
+        if (isset($row['email'])) {
+            $_SESSION['admin_email'] = $row['email']; // Store the employee's email
         }
 
 

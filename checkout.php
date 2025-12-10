@@ -1,0 +1,199 @@
+<?php
+session_start();
+include "db.php";
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+$message = "";
+
+$user_stmt = $conn->prepare("SELECT shipping_address, billing_address FROM users WHERE user_id = ?");
+$user_stmt->bind_param("i", $user_id);
+$user_stmt->execute();
+$user_result = $user_stmt->get_result();
+$user = $user_result->fetch_assoc();
+
+$cart_stmt = $conn->prepare("
+    SELECT c.cart_id, c.quantity, p.product_id, p.product_name, p.cost, p.quantity as stock_quantity
+    FROM cart c
+    JOIN products p ON c.product_id = p.product_id
+    WHERE c.user_id = ?
+");
+$cart_stmt->bind_param("i", $user_id);
+$cart_stmt->execute();
+$cart_result = $cart_stmt->get_result();
+
+if ($cart_result->num_rows == 0) {
+    header("Location: cart.php?message=" . urlencode("Your cart is empty!"));
+    exit();
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
+    $cart_result->data_seek(0);
+    $valid = true;
+    $errors = [];
+    
+    while ($item = $cart_result->fetch_assoc()) {
+        if ($item['quantity'] > $item['stock_quantity']) {
+            $valid = false;
+            $errors[] = $item['product_name'] . " - Only " . $item['stock_quantity'] . " available";
+        }
+    }
+    
+    if (!$valid) {
+        $message = implode(" ", $errors);
+    } else {
+        $cart_result->data_seek(0);
+        $total_amount = 0;
+        while ($item = $cart_result->fetch_assoc()) {
+            $total_amount += $item['cost'] * $item['quantity'];
+        }
+        
+        $order_stmt = $conn->prepare("INSERT INTO orders (user_id, shipping_address, billing_address, total_amount) VALUES (?, ?, ?, ?)");
+        $order_stmt->bind_param("issd", $user_id, $user['shipping_address'], $user['billing_address'], $total_amount);
+        
+        if ($order_stmt->execute()) {
+            $order_id = $order_stmt->insert_id;
+            
+            $cart_result->data_seek(0);
+            while ($item = $cart_result->fetch_assoc()) {
+                $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)");
+                $item_stmt->bind_param("iiid", $order_id, $item['product_id'], $item['quantity'], $item['cost']);
+                $item_stmt->execute();
+                
+                $new_quantity = $item['stock_quantity'] - $item['quantity'];
+                $update_stmt = $conn->prepare("UPDATE products SET quantity = ? WHERE product_id = ?");
+                $update_stmt->bind_param("ii", $new_quantity, $item['product_id']);
+                $update_stmt->execute();
+                
+                $inv_check = $conn->prepare("SELECT inventory_id FROM inventory WHERE product_id = ?");
+                $inv_check->bind_param("i", $item['product_id']);
+                $inv_check->execute();
+                $inv_result = $inv_check->get_result();
+                
+                if ($inv_result->num_rows > 0) {
+                    $update_inv = $conn->prepare("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?");
+                    $update_inv->bind_param("ii", $new_quantity, $item['product_id']);
+                    $update_inv->execute();
+                }
+            }
+            
+            $receipt_number = "REC-" . str_pad($order_id, 6, "0", STR_PAD_LEFT);
+            $receipt_stmt = $conn->prepare("INSERT INTO receipts (order_id, receipt_number) VALUES (?, ?)");
+            $receipt_stmt->bind_param("is", $order_id, $receipt_number);
+            $receipt_stmt->execute();
+            
+            $payment_stmt = $conn->prepare("INSERT INTO payment (order_id, payment_method, total_amount) VALUES (?, 'Cash on Delivery', ?)");
+            $payment_stmt->bind_param("id", $order_id, $total_amount);
+            $payment_stmt->execute();
+            
+            $clear_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
+            $clear_cart->bind_param("i", $user_id);
+            $clear_cart->execute();
+            
+            header("Location: order_confirmation.php?order_id=" . $order_id . "&receipt=" . $receipt_number);
+            exit();
+        } else {
+            $message = "Error creating order";
+        }
+    }
+}
+
+$cart_result->data_seek(0);
+$total_amount = 0;
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout</title>
+<style>
+body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 0; }
+.container { max-width: 900px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+h2 { text-align: center; color: #1d4ed8; margin-bottom: 20px; }
+.message { padding: 10px; margin-bottom: 15px; border-radius: 6px; background: #f8d7da; color: #721c24; }
+.checkout-section { margin-bottom: 30px; }
+.checkout-section h3 { color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+th { background: #1d4ed8; color: white; }
+.total-section { text-align: right; padding: 20px; background: #f9f9f9; border-radius: 8px; margin-top: 20px; }
+.total-section h3 { margin: 10px 0; color: #1d4ed8; }
+.btn { padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; font-size: 16px; }
+.btn-success { background: #10b981; color: white; }
+.btn-primary { background: #1d4ed8; color: white; }
+.address-box { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Checkout</h2>
+    
+    <?php if ($message != ""): ?>
+        <div class="message"><?php echo htmlspecialchars($message); ?></div>
+    <?php endif; ?>
+    
+    <div class="checkout-section">
+        <h3>Order Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($item = $cart_result->fetch_assoc()): 
+                    $subtotal = $item['cost'] * $item['quantity'];
+                    $total_amount += $subtotal;
+                ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                        <td>$<?php echo number_format($item['cost'], 2); ?></td>
+                        <td><?php echo $item['quantity']; ?></td>
+                        <td>$<?php echo number_format($subtotal, 2); ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="checkout-section">
+        <h3>Shipping Address</h3>
+        <div class="address-box">
+            <?php echo nl2br(htmlspecialchars($user['shipping_address'])); ?>
+        </div>
+    </div>
+    
+    <div class="checkout-section">
+        <h3>Billing Address</h3>
+        <div class="address-box">
+            <?php echo nl2br(htmlspecialchars($user['billing_address'])); ?>
+        </div>
+    </div>
+    
+    <div class="checkout-section">
+        <h3>Payment Method</h3>
+        <p><strong>Cash on Delivery</strong></p>
+        <p>You will pay when the order is delivered.</p>
+    </div>
+    
+    <div class="total-section">
+        <h3>Total: $<?php echo number_format($total_amount, 2); ?></h3>
+        <form method="POST">
+            <button type="submit" name="place_order" class="btn btn-success">Place Order</button>
+        </form>
+        <a href="cart.php" class="btn btn-primary" style="margin-top: 10px;">Back to Cart</a>
+    </div>
+</div>
+
+</body>
+</html>
+

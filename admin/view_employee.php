@@ -13,8 +13,8 @@ if (!isset($_GET['id'])) {
 
 $admin_id = intval($_GET['id']);
 
-// Fetch employee details
-$sql = "SELECT id, admin_userid, role, email, salary FROM admins WHERE id = ?";
+// Fetch employee details (using employees table)
+$sql = "SELECT employee_id, employee_userid, employee_type, email, salary, hire_date FROM employees WHERE employee_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $admin_id);
 $stmt->execute();
@@ -53,10 +53,14 @@ if (!$employee) {
 
 <div class="container">
     <h2>Employee Details</h2>
-    <p><strong>User ID:</strong> <?= htmlspecialchars($employee['admin_userid']) ?></p>
-    <p><strong>Email:</strong> <?= htmlspecialchars($employee['email']) ?></p>
-    <p><strong>Role:</strong> <?= htmlspecialchars($employee['role']) ?></p>
-    <p><strong>Salary:</strong> <span class="salary">$<?= number_format($employee['salary'], 2) ?></span></p>
+    <p><strong>Employee ID:</strong> <?= htmlspecialchars($employee['employee_id']) ?></p>
+    <p><strong>User ID:</strong> <?= htmlspecialchars($employee['employee_userid'] ?? 'N/A') ?></p>
+    <p><strong>Email:</strong> <?= htmlspecialchars($employee['email'] ?? 'N/A') ?></p>
+    <p><strong>Role:</strong> <?= htmlspecialchars($employee['employee_type']) ?></p>
+    <p><strong>Salary:</strong> <span class="salary">$<?= number_format($employee['salary'] ?? 0, 2) ?></span></p>
+    <?php if (isset($employee['hire_date'])): ?>
+        <p><strong>Hire Date:</strong> <?= htmlspecialchars($employee['hire_date']) ?></p>
+    <?php endif; ?>
 </div>
 
 </body>

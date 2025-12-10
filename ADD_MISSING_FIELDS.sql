@@ -1,0 +1,27 @@
+-- SQL Commands to Add Missing Fields to Existing Database Tables
+-- 
+-- ⚠️ IMPORTANT: This file is ONLY needed if you have an EXISTING database 
+-- that was created WITHOUT email and password fields.
+-- 
+-- If you are creating a NEW database, use tables.sql instead - 
+-- it already includes ALL required fields (email, password, employee_userid, etc.)
+-- 
+-- WARNING: Only run these commands if the columns don't already exist.
+-- MySQL will error if you try to add columns that already exist.
+--
+-- Check your database structure first:
+-- DESCRIBE users;
+-- DESCRIBE employees;
+--
+-- If email/password columns are missing from users table, run this:
+-- ALTER TABLE users 
+-- ADD COLUMN email VARCHAR(255) UNIQUE,
+-- ADD COLUMN password VARCHAR(255);
+--
+-- Note: The employees table in tables.sql already includes all required fields:
+-- employee_userid, email, employee_password
+-- If your existing employees table is missing these, you would need similar ALTER statements.
+--
+-- However, the RECOMMENDED approach is to recreate tables using tables.sql
+-- which has all fields properly defined from the start.
+

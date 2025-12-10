@@ -165,6 +165,19 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
 
     <!-- Orders icon + username -->
     <div class="top-right">
+        <a href="cart.php" class="order-icon" title="Cart" style="position:relative;">
+            Cart
+            <?php
+            $cart_count_stmt = $conn->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
+            $cart_count_stmt->bind_param("i", $user_id);
+            $cart_count_stmt->execute();
+            $cart_count_result = $cart_count_stmt->get_result();
+            $cart_count = $cart_count_result->fetch_assoc()['total'] ?? 0;
+            if ($cart_count > 0) {
+                echo '<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center;">'.$cart_count.'</span>';
+            }
+            ?>
+        </a>
         <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
         <div class="user-name"><?php echo htmlspecialchars($name); ?></div>
     </div>
@@ -172,7 +185,10 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
 
 <!-- CATEGORIES SECTION -->
 <div class="categories-container" style="padding: 20px;">
-    <h2 style="text-align:center; margin-bottom: 20px;">Shop by Category</h2>
+    <div style="text-align:center; margin-bottom: 20px;">
+        <h2 style="margin-bottom: 15px;">Shop by Category</h2>
+        <a href="education.php" style="display:inline-block; padding:10px 20px; background:#1d4ed8; color:white; text-decoration:none; border-radius:8px; margin-bottom:15px;">Learn About Tulips</a>
+    </div>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
         <?php 
         while($category = $category_query->fetch_assoc()) {

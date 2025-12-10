@@ -111,8 +111,8 @@ $profile_pic = isset($user['upload_profile']) && $user['upload_profile'] ? $user
 
 <!-- MENU OPTIONS -->
 <div class="profile-section">
-    <div class="profile-card" onclick="location.href='addresses.php'">
-        <span>Addresses</span>
+    <div class="profile-card" onclick="location.href='edit_addresses.php'">
+        <span>Edit Addresses</span>
     </div>
 
     <div class="profile-card" onclick="location.href='payment.php'">

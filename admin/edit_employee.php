@@ -14,8 +14,8 @@ if (!isset($_GET['id'])) {
 
 $admin_id = intval($_GET['id']);
 
-// Fetch employee
-$sql = "SELECT * FROM admins WHERE id = ?";
+// Fetch employee (using employees table)
+$sql = "SELECT * FROM employees WHERE employee_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $admin_id);
 $stmt->execute();
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = trim($_POST['role']);
     $salary = floatval($_POST['salary']);
 
-    $update = $conn->prepare("UPDATE admins SET admin_userid=?, email=?, role=?, salary=? WHERE id=?");
+    $update = $conn->prepare("UPDATE employees SET employee_userid=?, email=?, employee_type=?, salary=? WHERE employee_id=?");
     $update->bind_param("sssdi", $userid, $email, $role, $salary, $admin_id);
     
     if ($update->execute()) {
@@ -68,20 +68,20 @@ button { padding:10px 15px; background:#1d4ed8; color:white; border:none; cursor
 
 <form method="POST">
     <label>User ID</label>
-    <input type="text" name="userid" value="<?= htmlspecialchars($employee['admin_userid']) ?>" required>
+    <input type="text" name="userid" value="<?= htmlspecialchars($employee['employee_userid'] ?? '') ?>" required>
 
     <label>Email</label>
-    <input type="email" name="email" value="<?= htmlspecialchars($employee['email']) ?>" required>
+    <input type="email" name="email" value="<?= htmlspecialchars($employee['email'] ?? '') ?>" required>
 
     <label>Role</label>
     <select name="role" required>
-        <option value="inventory_manager" <?= $employee['role']=='inventory_manager'?'selected':'' ?>>Inventory Manager</option>
-        <option value="business_manager" <?= $employee['role']=='business_manager'?'selected':'' ?>>Business Manager</option>
-        <option value="owner" <?= $employee['role']=='owner'?'selected':'' ?>>Owner</option>
+        <option value="inventory_manager" <?= ($employee['employee_type'] ?? '')=='inventory_manager'?'selected':'' ?>>Inventory Manager</option>
+        <option value="business_manager" <?= ($employee['employee_type'] ?? '')=='business_manager'?'selected':'' ?>>Business Manager</option>
+        <option value="owner" <?= ($employee['employee_type'] ?? '')=='owner'?'selected':'' ?>>Owner</option>
     </select>
 
     <label>Salary (USD)</label>
-    <input type="number" step="0.01" name="salary" value="<?= htmlspecialchars($employee['salary']) ?>" required>
+    <input type="number" step="0.01" name="salary" value="<?= htmlspecialchars($employee['salary'] ?? '0') ?>" required>
 
     <button type="submit">Update Employee</button>
 </form>

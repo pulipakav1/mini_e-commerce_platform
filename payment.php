@@ -17,39 +17,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $method = $_POST['method'];
 
     if ($method == "Cash") {
-        $sql = "INSERT INTO payment_methods (user_id, method) 
-                VALUES (?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $user_id, $method);
-    } else {
-        $card = $_POST['card_number'];
-        $expiry = $_POST['expiry'];
-        $cvv = $_POST['cvv'];
+        // Schema has 'payment' table not 'payment_methods', and it requires order_id
+        // Payment is linked to orders, not users directly
+        // For now, just save method preference (would need order_id for actual payment)
+        // Remove card storage completely as per requirements
+        $message = "Payment method 'Cash on Delivery' will be used for your orders.";
 
-        $sql = "INSERT INTO payment_methods (user_id, method, card_number, expiry, cvv)
-                VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("issss", $user_id, $method, $card, $expiry, $cvv);
-    }
-
-    if ($stmt->execute()) {
-        $message = "Payment method saved successfully!";
-    } else {
-        $message = "Error saving payment method.";
-    }
+    // Note: Payment table in schema requires order_id, not user_id
+    // This is just for preference display
 }
 
-/* --------------------------
-   FETCH LAST PAYMENT METHOD
----------------------------*/
-$pm = $conn->prepare("
-    SELECT method, card_number, expiry 
-    FROM payment_methods 
-    WHERE user_id = ? ORDER BY id DESC LIMIT 1
-");
-$pm->bind_param("i", $user_id);
-$pm->execute();
-$last = $pm->get_result()->fetch_assoc();
+// No need to fetch payment method as it's per order
+$last = null;
 ?>
 <!DOCTYPE html>
 <html>
@@ -92,13 +71,6 @@ button {
 .success { color:green; font-weight:bold; text-align:center; }
 </style>
 
-<script>
-function toggleCardFields() {
-    let method = document.getElementById("method").value;
-    document.querySelector(".card-fields").style.display = 
-        (method === "Card") ? "block" : "none";
-}
-</script>
 </head>
 <body>
 
@@ -111,33 +83,18 @@ function toggleCardFields() {
 
     <form method="POST">
         <label>Select Payment Method:</label>
-        <select name="method" id="method" onchange="toggleCardFields()">
+        <select name="method" id="method">
             <option value="Cash">Cash on Delivery</option>
-            <option value="Card">Card Payment</option>
         </select>
-
-        <!-- CARD DETAILS -->
-        <div class="card-fields">
-            <input type="text" name="card_number" placeholder="Card Number">
-            <input type="text" name="expiry" placeholder="MM/YY">
-            <input type="text" name="cvv" placeholder="CVV">
-        </div>
 
         <button type="submit">Save Method</button>
     </form>
 
     <hr>
 
-    <h3>Last Used Method</h3>
-    <?php if ($last): ?>
-        <p><strong>Method:</strong> <?= $last['method'] ?></p>
-        <?php if ($last['method'] == "Card"): ?>
-            <p><strong>Card:</strong> <?= "**** **** **** " . substr($last['card_number'], -4) ?></p>
-            <p><strong>Expiry:</strong> <?= $last['expiry'] ?></p>
-        <?php endif; ?>
-    <?php else: ?>
-        <p>No payment method saved yet.</p>
-    <?php endif; ?>
+    <h3>Payment Information</h3>
+    <p>All orders will use <strong>Cash on Delivery</strong> payment method.</p>
+    <p>Payment details will be recorded when you place an order.</p>
 </div>
 
 </body>

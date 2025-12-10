@@ -89,6 +89,16 @@ while($product = $product_query->fetch_assoc()) {
     echo '<img src="'.htmlspecialchars($img).'" alt="'.htmlspecialchars($product['product_name']).'">';
     echo '<div class="product-name">'.htmlspecialchars($product['product_name']).'</div>';
     echo '<div class="product-price">$'.number_format($product['cost'],2).'</div>';
+    if ($product['quantity'] > 0) {
+        echo '<form method="POST" action="add_to_cart.php" style="margin-top:10px;">';
+        echo '<input type="hidden" name="product_id" value="'.$product['product_id'].'">';
+        echo '<input type="hidden" name="quantity" value="1">';
+        echo '<input type="hidden" name="redirect" value="style_accessories.php">';
+        echo '<button type="submit" style="width:100%; padding:8px; background:#1d4ed8; color:white; border:none; border-radius:6px; cursor:pointer;">Add to Cart</button>';
+        echo '</form>';
+    } else {
+        echo '<div style="margin-top:10px; padding:8px; background:#ccc; color:#666; text-align:center; border-radius:6px;">Out of Stock</div>';
+    }
     echo '</div>';
 }
 ?>
