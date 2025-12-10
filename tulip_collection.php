@@ -54,11 +54,46 @@ body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; 
     top: 0;
     z-index: 999;
 }
-.logo-text { font-size: 20px; font-weight: bold; color: #1d4ed8; }
+.logo-text { font-size: 16px; font-weight: bold; color: #1d4ed8; }
 .top-right { display: flex; align-items: center; gap: 10px; }
-.order-icon { font-size: 22px; cursor: pointer; text-decoration: none; color: #1d4ed8; padding: 8px; border-radius: 50%; transition: 0.3s; }
+.order-icon { font-size: 14px; cursor: pointer; text-decoration: none; color: #1d4ed8; padding: 6px 8px; border-radius: 6px; transition: 0.3s; }
 .order-icon:hover { background: #e8efff; }
-.user-name { font-size: 14px; font-weight: bold; color: #333; }
+.user-name { font-size: 13px; font-weight: bold; color: #333; position: relative; cursor: pointer; }
+
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    min-width: 150px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 8px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.user-dropdown:hover .dropdown-content {
+    display: block;
+}
 
 .products-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px; }
 .product-card { border: 1px solid #eee; border-radius: 12px; padding: 10px; text-align: center; transition: 0.3s; }
@@ -98,7 +133,13 @@ body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; 
             ?>
         </a>
         <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
-        <div class="user-name"><?php echo $name; ?></div>
+        <div class="user-dropdown">
+            <div class="user-name"><?php echo $name; ?> ▼</div>
+            <div class="dropdown-content">
+                <a href="profile.php">Profile</a>
+                <a href="logout.php">Logout</a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -123,11 +164,22 @@ if ($product_query->num_rows > 0) {
     echo '<div class="product-name">'.htmlspecialchars($product['product_name']).'</div>';
     echo '<div class="product-price">$'.number_format($product['cost'],2).'</div>';
     if ($product['quantity'] > 0) {
-        echo '<form method="POST" action="add_to_cart.php" style="margin-top:10px;">';
+        echo '<div style="margin-top:10px;">';
+        echo '<label style="font-size:12px; color:#666; display:block; margin-bottom:5px;">Quantity:</label>';
+        echo '<input type="number" name="qty_'.$product['product_id'].'" id="qty_'.$product['product_id'].'" value="1" min="1" max="'.$product['quantity'].'" style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px;">';
+        echo '</div>';
+        
+        echo '<form method="POST" action="add_to_cart.php" style="margin-bottom:5px;">';
         echo '<input type="hidden" name="product_id" value="'.$product['product_id'].'">';
-        echo '<input type="hidden" name="quantity" value="1">';
+        echo '<input type="hidden" name="quantity" id="cart_qty_'.$product['product_id'].'" value="1">';
         echo '<input type="hidden" name="redirect" value="tulip_collection.php">';
-        echo '<button type="submit" style="width:100%; padding:8px; background:#1d4ed8; color:white; border:none; border-radius:6px; cursor:pointer;">Add to Cart</button>';
+        echo '<button type="submit" onclick="document.getElementById(\'cart_qty_'.$product['product_id'].'\').value = document.getElementById(\'qty_'.$product['product_id'].'\').value;" style="width:100%; padding:8px; background:#1d4ed8; color:white; border:none; border-radius:6px; cursor:pointer; margin-bottom:5px;">Add to Cart</button>';
+        echo '</form>';
+        
+        echo '<form method="POST" action="buy_now.php">';
+        echo '<input type="hidden" name="product_id" value="'.$product['product_id'].'">';
+        echo '<input type="hidden" name="quantity" id="buy_qty_'.$product['product_id'].'" value="1">';
+        echo '<button type="submit" onclick="document.getElementById(\'buy_qty_'.$product['product_id'].'\').value = document.getElementById(\'qty_'.$product['product_id'].'\').value;" style="width:100%; padding:8px; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer;">Buy Now</button>';
         echo '</form>';
     } else {
         echo '<div style="margin-top:10px; padding:8px; background:#ccc; color:#666; text-align:center; border-radius:6px;">Out of Stock</div>';

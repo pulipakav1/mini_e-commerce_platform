@@ -84,15 +84,19 @@ $result_orders = $stmt->get_result();
     <a href="home.php" class="back-btn">Back to Home</a>
 
     <table>
-        <tr>
-            <th>Order ID</th>
-            <th>Order Date</th>
-            <th>Receipt Number</th>
-            <th>Total Amount</th>
-            <th>Products</th>
-            <th>Status</th>
-        </tr>
-
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Order Date</th>
+                <th>Receipt Number</th>
+                <th>Product</th>
+                <th>Price ($)</th>
+                <th>Quantity</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
         <?php
         if ($result_orders->num_rows > 0) {
             while ($order = $result_orders->fetch_assoc()) {
@@ -111,29 +115,56 @@ $result_orders = $stmt->get_result();
                 $items_stmt->execute();
                 $items_result = $items_stmt->get_result();
                 
-                // Build products list
-                $products_list = array();
-                while ($item = $items_result->fetch_assoc()) {
-                    $products_list[] = htmlspecialchars($item['product_name']) . " (Qty: " . $item['quantity'] . ")";
-                }
-                $items_stmt->close();
-                
-                $products_display = !empty($products_list) ? implode(", ", $products_list) : "No products";
                 $order_date_formatted = $order['order_date'] ? date('F j, Y g:i A', strtotime($order['order_date'])) : 'N/A';
+                $item_count = 0;
+                $total_items = $items_result->num_rows;
                 
-                echo "<tr>";
-                echo "<td>" . htmlspecialchars($order['order_id']) . "</td>";
-                echo "<td>" . htmlspecialchars($order_date_formatted) . "</td>";
-                echo "<td>" . htmlspecialchars($receipt_number) . "</td>";
-                echo "<td>$" . number_format($order['total_amount'], 2) . "</td>";
-                echo "<td>" . htmlspecialchars($products_display) . "</td>";
-                echo "<td>Completed</td>";
-                echo "</tr>";
+                // Display each item as a separate row, with order info in first row
+                while ($item = $items_result->fetch_assoc()) {
+                    $item_count++;
+                    echo "<tr>";
+                    
+                    // First row shows order details, subsequent rows are empty for those columns
+                    if ($item_count == 1) {
+                        echo "<td rowspan='" . $total_items . "'>" . htmlspecialchars($order['order_id']) . "</td>";
+                        echo "<td rowspan='" . $total_items . "'>" . htmlspecialchars($order_date_formatted) . "</td>";
+                        echo "<td rowspan='" . $total_items . "'>" . htmlspecialchars($receipt_number) . "</td>";
+                        echo "<td>" . htmlspecialchars($item['product_name']) . "</td>";
+                        echo "<td>$" . number_format($item['unit_price'], 2) . "</td>";
+                        echo "<td>" . htmlspecialchars($item['quantity']) . "</td>";
+                        echo "<td rowspan='" . $total_items . "' style='font-weight:bold;'>$" . number_format($order['total_amount'], 2) . "</td>";
+                        echo "<td rowspan='" . $total_items . "'>Completed</td>";
+                    } else {
+                        echo "<td>" . htmlspecialchars($item['product_name']) . "</td>";
+                        echo "<td>$" . number_format($item['unit_price'], 2) . "</td>";
+                        echo "<td>" . htmlspecialchars($item['quantity']) . "</td>";
+                    }
+                    
+                    echo "</tr>";
+                }
+                
+                // If no items, still show order row
+                if ($total_items == 0) {
+                    echo "<tr>";
+                    echo "<td>" . htmlspecialchars($order['order_id']) . "</td>";
+                    echo "<td>" . htmlspecialchars($order_date_formatted) . "</td>";
+                    echo "<td>" . htmlspecialchars($receipt_number) . "</td>";
+                    echo "<td colspan='3'>No items</td>";
+                    echo "<td>$" . number_format($order['total_amount'], 2) . "</td>";
+                    echo "<td>Completed</td>";
+                    echo "</tr>";
+                }
+                
+                // Add spacing row between orders
+                echo "<tr><td colspan='8' style='height:10px; border:none; background:#f9f9f9;'></td></tr>";
+                
+                $items_stmt->close();
             }
         } else {
-            echo "<tr><td colspan='6' style='text-align:center; padding:20px;'>No orders found</td></tr>";
+            echo "<tr><td colspan='8' style='text-align:center; padding:20px;'>No orders found</td></tr>";
         }
         ?>
+        </tbody>
     </table>
 
 </div>

@@ -107,6 +107,9 @@ th { background: #1d4ed8; color: white; }
         <h3>Shipping Address</h3>
         <p><?php echo nl2br(htmlspecialchars($order['shipping_address'])); ?></p>
         
+        <h3>Billing Address</h3>
+        <p><?php echo nl2br(htmlspecialchars($order['billing_address'])); ?></p>
+        
         <h3>Payment Method</h3>
         <p>Cash on Delivery</p>
     </div>

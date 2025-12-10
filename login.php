@@ -62,27 +62,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
             padding: 0;
         }
         body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            padding: 20px;
         }
         .login-container {
-            background: #fff;
-            padding: 50px 40px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 50px 45px;
             width: 450px;
-            border-radius: 12px;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
             align-items: center;
+            border: 1px solid rgba(255,255,255,0.3);
         }
         h2 {
-            font-size: 28px;
-            margin-bottom: 35px;
-            color: #333;
+            font-size: 32px;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            letter-spacing: -1px;
         }
         form {
             width: 100%;
@@ -91,15 +99,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
         }
         input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 16px;
+            padding: 16px 18px;
             margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
         }
         input:focus {
-            border-color: #1877f2;
+            border-color: #667eea;
             outline: none;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
         .forgot {
             text-align: right;
@@ -113,15 +125,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
         button {
             width: 100%;
             padding: 16px;
-            background-color: #1877f2;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             font-size: 16px;
+            font-weight: 600;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         button:hover {
-            background-color: #0d62d2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        button:active {
+            transform: translateY(0);
         }
         .link {
             margin-top: 25px;
@@ -130,8 +149,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
         }
         .link a {
             text-decoration: none;
-            color: #1877f2;
-            font-weight: bold;
+            color: #667eea;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .link a:hover {
+            color: #764ba2;
         }
         @media (max-width: 500px) {
             .login-container {
@@ -179,18 +202,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
         <p style="color: #666; margin-bottom: 10px; font-size: 14px;">Employee Login</p>
         <a href="admin/admin_login.php" style="
             width: 100%;
-            padding: 12px;
-            background-color: #34a853;
+            padding: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 16px;
             display: inline-block;
             text-align: center;
             text-decoration: none;
-            font-weight: bold;
-        ">Login as Admin</a>
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(16, 185, 129, 0.3)'">Login as Admin</a>
     </div>
 
 </div>

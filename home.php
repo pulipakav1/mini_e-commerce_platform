@@ -27,8 +27,8 @@ if (!$user) {
 
 $name = htmlspecialchars($user['name']);
 
-// Fetch categories with images
-$category_query = $conn->query("SELECT category_id, category_name FROM category");
+// Fetch categories with images (use DISTINCT to avoid duplicates)
+$category_query = $conn->query("SELECT DISTINCT category_id, category_name FROM category ORDER BY category_id");
 if (!$category_query) {
     die("Database error: " . $conn->error);
 }
@@ -43,56 +43,82 @@ if (!$category_query) {
 <title>Home - Flower Shop</title>
 <style>
     body {
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         margin: 0;
         padding: 0;
-        background: #ffffff;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
     }
 
     /* Top Bar */
     .top-bar {
         width: 100%;
-        background: #fff;
-        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 15px 25px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         position: sticky;
         top: 0;
         z-index: 999;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     .logo-text {
-        font-size: 16px;
-        font-weight: bold;
-        color: #1d4ed8;
+        font-size: 20px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.5px;
     }
 
     /* Search Box */
     .search-box {
         display: flex;
         align-items: center;
-        background: #f1f3f5;
-        border-radius: 8px;
-        padding: 4px 8px;
+        background: #ffffff;
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 8px 15px;
         width: 400px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .search-box:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
     }
 
     .search-box input {
         border: none;
         background: transparent;
         outline: none;
-        font-size: 13px;
+        font-size: 14px;
         width: 100%;
-        padding: 4px 6px;
+        padding: 4px 8px;
+        color: #333;
+    }
+
+    .search-box input::placeholder {
+        color: #9ca3af;
     }
 
     .search-icon {
         font-size: 14px;
         margin-left: 4px;
         cursor: pointer;
-        color: #666;
+        color: #667eea;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .search-icon:hover {
+        color: #764ba2;
     }
 
     /* Top-right items */
@@ -102,25 +128,102 @@ if (!$category_query) {
         gap: 10px;
         margin-right: 50px;
     }
+    
+    .user-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: #fff;
+        min-width: 150px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1000;
+        border-radius: 8px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    
+    .dropdown-content a {
+        color: #333;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    
+    .dropdown-content a:hover {
+        background-color: #f1f1f1;
+    }
+    
+    .user-dropdown:hover .dropdown-content {
+        display: block;
+    }
 
     .order-icon {
         font-size: 14px;
         cursor: pointer;
         text-decoration: none;
-        color: #1d4ed8;
-        padding: 6px 8px;
-        border-radius: 6px;
-        transition: 0.3s;
+        color: #667eea;
+        padding: 8px 14px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        position: relative;
     }
 
     .order-icon:hover {
-        background: #e8efff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .user-name {
         font-size: 13px;
         font-weight: bold;
         color: #333;
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .user-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        background-color: #fff;
+        min-width: 150px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1000;
+        border-radius: 8px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    
+    .dropdown-content a {
+        color: #333;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    
+    .dropdown-content a:hover {
+        background-color: #f1f1f1;
+    }
+    
+    .user-dropdown:hover .dropdown-content {
+        display: block;
     }
 
     /* Content Box */
@@ -132,32 +235,44 @@ if (!$category_query) {
     /* Modern Floating Bottom Menu */
     .bottom-menu {
         position: fixed;
-        bottom: 20px;
+        bottom: 25px;
         left: 50%;
         transform: translateX(-50%);
-        background: #fff;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
         display: flex;
         justify-content: space-around;
         width: 90%;
         max-width: 500px;
-        padding: 12px 0;
-        border-radius: 30px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        padding: 14px 0;
+        border-radius: 25px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
         z-index: 1000;
+        border: 1px solid rgba(255,255,255,0.8);
     }
 
     .bottom-menu a {
         text-decoration: none;
-        color: #888;
+        color: #9ca3af;
         font-size: 18px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        transition: 0.3s;
+        transition: all 0.3s ease;
+        padding: 8px 20px;
+        border-radius: 15px;
+    }
+
+    .bottom-menu a:hover {
+        color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateY(-3px);
     }
 
     .bottom-menu a.active {
-        color: #1d4ed8;
+        color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+        font-weight: 600;
     }
 
     .bottom-menu span {
@@ -174,8 +289,10 @@ if (!$category_query) {
 
     <!-- Small Search Field -->
     <div class="search-box">
-        <input type="text" placeholder="Search...">
-        <div class="search-icon">Search</div>
+        <form method="GET" action="search.php" style="display: flex; width: 100%; align-items: center;">
+            <input type="text" name="q" placeholder="Search products..." style="border: none; background: transparent; outline: none; font-size: 13px; width: 100%; padding: 4px 6px;">
+            <button type="submit" style="background: none; border: none; font-size: 14px; margin-left: 4px; cursor: pointer; color: #666; padding: 4px 8px;">Search</button>
+        </form>
     </div>
 
     <!-- Orders icon + username -->
@@ -200,15 +317,22 @@ if (!$category_query) {
             ?>
         </a>
         <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
-        <div class="user-name"><?php echo $name; ?></div>
+        <div class="user-dropdown">
+            <div class="user-name"><?php echo $name; ?> ▼</div>
+            <div class="dropdown-content">
+                <a href="profile.php">Profile</a>
+                <a href="logout.php">Logout</a>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- CATEGORIES SECTION -->
 <div class="categories-container" style="padding: 20px;">
-    <div style="text-align:center; margin-bottom: 30px;">
-        <a href="education.php" style="display:inline-block; padding:12px 24px; background:#1d4ed8; color:white; text-decoration:none; border-radius:8px; margin-bottom:20px; font-size:16px; font-weight:bold;">Learn About Tulips</a>
-        <h2 style="margin-top: 20px; margin-bottom: 15px;">Shop by Category</h2>
+    <div style="text-align:center; margin-bottom: 40px; padding: 30px 20px;">
+        <a href="education.php" style="display:inline-block; padding:14px 32px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; text-decoration:none; border-radius:12px; margin-bottom:25px; font-size:16px; font-weight:600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">Learn About Tulips</a>
+        <h2 style="margin-top: 30px; margin-bottom: 20px; color: #1f2937; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Shop by Category</h2>
+        <p style="color: #6b7280; font-size: 16px; margin-bottom: 10px;">Discover our curated collection</p>
     </div>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
         <?php 
@@ -235,10 +359,10 @@ if (!$category_query) {
 
             $link = $category_links[$category['category_name']] ?? '#';
 
-            echo '<a href="'.htmlspecialchars($link).'" style="text-decoration:none;">';
-                echo '<div style="width: 160px; text-align:center;">';
-                    echo '<img src="'.htmlspecialchars($img_path).'" alt="'.htmlspecialchars($category['category_name']).'" style="width:100%; height:120px; object-fit:cover; border-radius:12px;">';
-                    echo '<div style="margin-top:8px; font-weight:bold; color:#1d4ed8;">'.htmlspecialchars($category['category_name']).'</div>';
+            echo '<a href="'.htmlspecialchars($link).'" style="text-decoration:none; display:block; transition: all 0.3s ease;" onmouseover="this.style.transform=\'translateY(-8px)\'" onmouseout="this.style.transform=\'translateY(0)\'">';
+                echo '<div style="width: 180px; text-align:center; background:white; padding:20px; border-radius:16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: all 0.3s ease;">';
+                    echo '<img src="'.htmlspecialchars($img_path).'" alt="'.htmlspecialchars($category['category_name']).'" style="width:100%; height:140px; object-fit:cover; border-radius:12px; margin-bottom:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">';
+                    echo '<div style="margin-top:8px; font-weight:600; color:#667eea; font-size:15px;">'.htmlspecialchars($category['category_name']).'</div>';
                 echo '</div>';
             echo '</a>';
             }
