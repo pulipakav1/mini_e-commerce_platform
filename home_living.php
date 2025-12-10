@@ -6,13 +6,26 @@ if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
 $user_id = $_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT name FROM users WHERE user_id=?");
+if (!$stmt) {
+    die("Database error: " . $conn->error);
+}
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
-$name = $user['name'] ?? 'User';
+
+if (!$user) {
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+
+$name = htmlspecialchars($user['name']);
 
 $product_query = $conn->query("SELECT * FROM products WHERE category_id=1");
+if (!$product_query) {
+    die("Database error: " . $conn->error);
+}
 ?>
 
 <!DOCTYPE html>
@@ -46,8 +59,27 @@ body { font-family: Arial, sans-serif; margin:0; padding:0; background:#fff; }
 <div class="top-bar">
     <div class="logo-text">Team Toronto</div>
     <div class="top-right">
+        <a href="cart.php" class="order-icon" title="Cart" style="position:relative;">
+            Cart
+            <?php
+            $cart_count = 0;
+            $cart_count_stmt = $conn->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
+            if ($cart_count_stmt) {
+                $cart_count_stmt->bind_param("i", $user_id);
+                $cart_count_stmt->execute();
+                $cart_count_result = $cart_count_stmt->get_result();
+                if ($cart_count_result) {
+                    $cart_row = $cart_count_result->fetch_assoc();
+                    $cart_count = $cart_row['total'] ?? 0;
+                }
+            }
+            if ($cart_count > 0) {
+                echo '<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center;">'.htmlspecialchars($cart_count).'</span>';
+            }
+            ?>
+        </a>
         <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
-        <div class="user-name"><?php echo htmlspecialchars($name); ?></div>
+        <div class="user-name"><?php echo $name; ?></div>
     </div>
 </div>
 
@@ -57,7 +89,8 @@ body { font-family: Arial, sans-serif; margin:0; padding:0; background:#fff; }
 
 <div class="products-container">
 <?php
-while($product = $product_query->fetch_assoc()) {
+if ($product_query->num_rows > 0) {
+    while($product = $product_query->fetch_assoc()) {
     $img_stmt = $conn->prepare("SELECT file_path FROM images WHERE product_id=? LIMIT 1");
     $img_stmt->bind_param("i", $product['product_id']);
     $img_stmt->execute();
@@ -80,6 +113,9 @@ while($product = $product_query->fetch_assoc()) {
         echo '<div style="margin-top:10px; padding:8px; background:#ccc; color:#666; text-align:center; border-radius:6px;">Out of Stock</div>';
     }
     echo '</div>';
+    }
+} else {
+    echo '<p style="text-align:center; width:100%; grid-column:1/-1;">No products in this category.</p>';
 }
 ?>
 </div>

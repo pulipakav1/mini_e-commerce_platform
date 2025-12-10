@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
     $employee_name   = trim($_POST['employee_name']);   // admin_userid
     $employee_role   = trim($_POST['employee_role']);   // role
     $employee_email  = trim($_POST['employee_email']);  // email
-    $employee_salary = trim($_POST['employee_salary']); // salary
+    $employee_salary = floatval($_POST['employee_salary']); // salary
 
     // Default password
     $default_password = password_hash('ChangeMe123', PASSWORD_DEFAULT);

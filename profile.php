@@ -1,8 +1,4 @@
 <?php
-// Show errors during development
-error_reporting(E_ALL);
-ini_set("display_errors", 1);
-
 session_start();
 include "db.php";
 
@@ -14,33 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-/* ------------------------------------
-   HANDLE PROFILE PICTURE UPLOAD
--------------------------------------*/
-if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
-    $target_dir = "uploads/"; // Folder where images will be stored
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0755, true);
-    }
-
-    $filename = basename($_FILES['photo']['name']);
-    $target_file = $target_dir . $filename;
-    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-    $allowed_types = ['jpg','jpeg','png','gif'];
-
-    // Validate file
-    $check = getimagesize($_FILES["photo"]["tmp_name"]);
-    if($check !== false && in_array($imageFileType, $allowed_types) && $_FILES["photo"]["size"] <= 2000000){
-        if (move_uploaded_file($_FILES["photo"]["tmp_name"], $target_file)) {
-            // Update user's profile in DB
-            // Note: Schema doesn't have upload_profile - if DB has it, uncomment
-            // $stmt = $conn->prepare("UPDATE users SET upload_profile=? WHERE user_id=?");
-            // $stmt->bind_param("si", $filename, $user_id);
-            // $stmt->execute();
-            $_SESSION['profile_updated'] = true;
-        }
-    }
-}
 
 /* ------------------------------------
    FETCH USER DATA (matching schema: user_id, name)
@@ -64,8 +33,8 @@ $user = $result->fetch_assoc();
 $name  = htmlspecialchars($user['name']);
 $email = isset($user['email']) ? htmlspecialchars($user['email']) : 'No email';
 
-// If no uploaded picture → use default (assuming upload_profile field exists)
-$profile_pic = isset($user['upload_profile']) && $user['upload_profile'] ? $user['upload_profile'] : "default.png";
+// Use default profile picture (profile upload not implemented)
+$profile_pic = "default.png";
 
 ?>
 <!DOCTYPE html>
@@ -93,12 +62,7 @@ $profile_pic = isset($user['upload_profile']) && $user['upload_profile'] ? $user
 <div class="profile-top">
     <div class="profile-info">
 
-        <!-- Upload Profile Picture -->
-        <form id="picForm" action="profile.php" method="post" enctype="multipart/form-data">
-            <input type="file" name="photo" id="fileInput" style="display:none" onchange="document.getElementById('picForm').submit()">
-        </form>
-
-        <img src="uploads/<?php echo $profile_pic; ?>" onclick="document.getElementById('fileInput').click()">
+        <img src="uploads/<?php echo $profile_pic; ?>" alt="Profile Picture">
 
         <div>
             <div style="font-weight:bold;"><?php echo $name; ?></div>
@@ -111,16 +75,8 @@ $profile_pic = isset($user['upload_profile']) && $user['upload_profile'] ? $user
 
 <!-- MENU OPTIONS -->
 <div class="profile-section">
-    <div class="profile-card" onclick="location.href='edit_addresses.php'">
-        <span>Edit Addresses</span>
-    </div>
-
-    <div class="profile-card" onclick="location.href='payment.php'">
-        <span>Payment Methods</span>
-    </div>
-
-    <div class="profile-card" onclick="location.href='change_password.php'">
-        <span>Change Password</span>
+    <div class="profile-card" onclick="location.href='my_orders.php'">
+        <span>My Orders</span>
     </div>
 </div>
 

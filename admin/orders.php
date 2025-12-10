@@ -48,8 +48,9 @@ $search = "";
 if (isset($_GET['search'])) {
     $search = trim($_GET['search']);
     $search_param = "%".$search."%";
-    $stmt = $conn->prepare("SELECT * FROM products WHERE product_name LIKE ? OR category_id LIKE ?");
-    $stmt->bind_param("ss", $search_param, $search_param);
+    // Only search product_name with LIKE, category_id should be exact match
+    $stmt = $conn->prepare("SELECT * FROM products WHERE product_name LIKE ?");
+    $stmt->bind_param("s", $search_param);
     $stmt->execute();
     $result = $stmt->get_result();
 } else {
@@ -224,7 +225,7 @@ if (isset($_GET['search'])) {
                         <td><?php echo $row['quantity']; ?></td>
                         <td>
                             <a href="edit_product.php?id=<?php echo $row['product_id']; ?>" class="action-btn">Edit</a>
-                            <a href="products.php?delete_id=<?php echo $row['product_id']; ?>" class="action-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                            <a href="view_products.php?delete_id=<?php echo $row['product_id']; ?>" class="action-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
                         </td>
                     </tr>
                 <?php endwhile; ?>

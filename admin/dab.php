@@ -1,4 +1,12 @@
 <?php
+session_start();
+
+// Protect this file - only allow if admin is logged in
+if (!isset($_SESSION['admin_id']) || $_SESSION['admin_role'] != 'owner') {
+    header("Location: ../login.php");
+    exit();
+}
+
 include '../db.php';
 
 $admin_userid = 'admin';

@@ -15,9 +15,9 @@ $success = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     $product_name = trim($_POST['product_name']);
     $product_description = trim($_POST['product_description']);
-    $category_id = trim($_POST['category_id']);
-    $cost = trim($_POST['cost']);
-    $quantity = trim($_POST['quantity']);
+    $category_id = intval($_POST['category_id']);
+    $cost = floatval($_POST['cost']);
+    $quantity = intval($_POST['quantity']);
 
     // Handle image upload
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === 0) {
@@ -49,20 +49,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
         // Products table schema: product_id (auto), product_name, product_description, category_id, cost, quantity
         // Images stored in separate images table, not product_image field
         $stmt = $conn->prepare("INSERT INTO products (product_name, product_description, category_id, cost, quantity) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssidd", $product_name, $product_description, $category_id, $cost, $quantity);
+        $stmt->bind_param("ssidi", $product_name, $product_description, $category_id, $cost, $quantity);
         
         if ($stmt->execute()) {
             $product_id = $stmt->insert_id;
+            
             // Insert image into images table
             if (isset($product_image_path)) {
                 $img_stmt = $conn->prepare("INSERT INTO images (product_id, file_path) VALUES (?, ?)");
                 $img_stmt->bind_param("is", $product_id, $product_image_path);
-                $img_stmt->execute();
+                
+                if ($img_stmt->execute()) {
+                    // Create or update inventory record
+                    $inv_check = $conn->prepare("SELECT inventory_id FROM inventory WHERE product_id = ?");
+                    $inv_check->bind_param("i", $product_id);
+                    $inv_check->execute();
+                    $inv_result = $inv_check->get_result();
+                    
+                    if ($inv_result->num_rows > 0) {
+                        // Update existing inventory
+                        $update_inv = $conn->prepare("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?");
+                        $update_inv->bind_param("ii", $quantity, $product_id);
+                        $update_inv->execute();
+                        $update_inv->close();
+                    } else {
+                        // Create new inventory record
+                        $insert_inv = $conn->prepare("INSERT INTO inventory (product_id, quantity, last_updated) VALUES (?, ?, CURRENT_TIMESTAMP)");
+                        $insert_inv->bind_param("ii", $product_id, $quantity);
+                        $insert_inv->execute();
+                        $insert_inv->close();
+                    }
+                    $inv_check->close();
+                    
+                    $success = "Product added successfully with image!";
+                } else {
+                    $error = "Product added but failed to save image: " . $img_stmt->error;
+                }
                 $img_stmt->close();
+            } else {
+                // Create or update inventory record even without image
+                $inv_check = $conn->prepare("SELECT inventory_id FROM inventory WHERE product_id = ?");
+                $inv_check->bind_param("i", $product_id);
+                $inv_check->execute();
+                $inv_result = $inv_check->get_result();
+                
+                if ($inv_result->num_rows > 0) {
+                    $update_inv = $conn->prepare("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?");
+                    $update_inv->bind_param("ii", $quantity, $product_id);
+                    $update_inv->execute();
+                    $update_inv->close();
+                } else {
+                    $insert_inv = $conn->prepare("INSERT INTO inventory (product_id, quantity, last_updated) VALUES (?, ?, CURRENT_TIMESTAMP)");
+                    $insert_inv->bind_param("ii", $product_id, $quantity);
+                    $insert_inv->execute();
+                    $insert_inv->close();
+                }
+                $inv_check->close();
+                
+                $success = "Product added successfully!";
             }
-            $success = "Product added successfully!";
         } else {
-            $error = "Failed to add product. Try again!";
+            $error = "Failed to add product: " . $stmt->error;
         }
         $stmt->close();
 

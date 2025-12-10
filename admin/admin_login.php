@@ -2,6 +2,18 @@
 session_start(); // Start the session
 include '../db.php'; // Ensure the path to db.php is correct
 
+// If admin is already logged in, redirect to dashboard
+if (isset($_SESSION['admin_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+// If user is logged in, redirect to login (they need to logout first)
+if (isset($_SESSION['user_id'])) {
+    header("Location: ../login.php");
+    exit();
+}
+
 $error = ""; // Variable to store login error message
 
 // Handle admin login
@@ -126,9 +138,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
 
     <form method="POST">
         <input type="text" name="admin_userid" placeholder="Admin User ID" required>
-        <div class="forgot">
-            <a href="admin_forgot_password.php">Forgot Password?</a>
-        </div>
         <button type="submit" name="admin_login">Login</button>
     </form>
 

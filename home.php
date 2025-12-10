@@ -10,14 +10,28 @@ if (!isset($_SESSION['user_id'])) {
 // Fetch user info (using user_id and name as per schema)
 $user_id = $_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT name FROM users WHERE user_id=?");
+if (!$stmt) {
+    die("Database error: " . $conn->error);
+}
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
-$name = $user['name'];
+
+if (!$user) {
+    // User not found - session might be invalid, redirect to login
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+
+$name = htmlspecialchars($user['name']);
 
 // Fetch categories with images
 $category_query = $conn->query("SELECT category_id, category_name FROM category");
+if (!$category_query) {
+    die("Database error: " . $conn->error);
+}
 
 ?>
 
@@ -168,18 +182,24 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
         <a href="cart.php" class="order-icon" title="Cart" style="position:relative;">
             Cart
             <?php
+            $cart_count = 0;
             $cart_count_stmt = $conn->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
-            $cart_count_stmt->bind_param("i", $user_id);
-            $cart_count_stmt->execute();
-            $cart_count_result = $cart_count_stmt->get_result();
-            $cart_count = $cart_count_result->fetch_assoc()['total'] ?? 0;
+            if ($cart_count_stmt) {
+                $cart_count_stmt->bind_param("i", $user_id);
+                $cart_count_stmt->execute();
+                $cart_count_result = $cart_count_stmt->get_result();
+                if ($cart_count_result) {
+                    $cart_row = $cart_count_result->fetch_assoc();
+                    $cart_count = $cart_row['total'] ?? 0;
+                }
+            }
             if ($cart_count > 0) {
-                echo '<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center;">'.$cart_count.'</span>';
+                echo '<span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center;">'.htmlspecialchars($cart_count).'</span>';
             }
             ?>
         </a>
         <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
-        <div class="user-name"><?php echo htmlspecialchars($name); ?></div>
+        <div class="user-name"><?php echo $name; ?></div>
     </div>
 </div>
 
@@ -191,7 +211,8 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
     </div>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
         <?php 
-        while($category = $category_query->fetch_assoc()) {
+        if ($category_query->num_rows > 0) {
+            while($category = $category_query->fetch_assoc()) {
 
             // Convert category name to valid image file name
             $img_name = str_replace([' ', '&'], ['_', 'and'], $category['category_name']) . ".jpg";
@@ -219,7 +240,10 @@ $category_query = $conn->query("SELECT category_id, category_name FROM category"
                     echo '<div style="margin-top:8px; font-weight:bold; color:#1d4ed8;">'.htmlspecialchars($category['category_name']).'</div>';
                 echo '</div>';
             echo '</a>';
-        } 
+            }
+        } else {
+            echo '<p style="text-align:center; width:100%;">No categories found. Please add categories to the database.</p>';
+        }
         ?>
     </div>
 </div>

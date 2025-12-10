@@ -2,6 +2,18 @@
 session_start(); // Start the session
 include 'db.php'; // Include the database connection
 
+// If user is already logged in, redirect to home
+if (isset($_SESSION['user_id'])) {
+    header("Location: home.php");
+    exit();
+}
+
+// If admin is already logged in, redirect to admin dashboard
+if (isset($_SESSION['admin_id'])) {
+    header("Location: admin/dashboard.php");
+    exit();
+}
+
 $error = ""; // Variable to store login error message
 
 // Check if the form is submitted for normal user login
@@ -141,7 +153,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
     <h2>Login</h2>
 
     <?php if (isset($_GET['signup']) && $_GET['signup'] == 'success') { ?>
-        <div style="color: green; margin-bottom: 20px; text-align: center; padding: 10px; background: #d4edda; border-radius: 6px;">
+        <div style="color: #155724; margin-bottom: 20px; text-align: center; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; font-weight: bold;">
             Account created successfully! Please login with your credentials.
         </div>
     <?php } ?>
@@ -154,9 +166,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
     <form method="POST">
         <input type="text" name="username" placeholder="Enter Username" required>
         <input type="password" name="password" placeholder="Enter Password" required>
-        <div class="forgot">
-            <a href="forgot_password.php">Forgot Password?</a>
-        </div>
         <button type="submit" name="user_login">Login</button>
     </form>
 
@@ -165,8 +174,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
         <a href="signup.php">Create one</a>
     </div>
 
-    <!-- Link to Admin Login -->
-    <div class="link" style="margin-top:15px; text-align:center;">
+    <!-- Admin Login Option -->
+    <div style="margin-top: 20px; text-align: center; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p style="color: #666; margin-bottom: 10px; font-size: 14px;">Employee Login</p>
         <a href="admin/admin_login.php" style="
             width: 100%;
             padding: 12px;
@@ -179,7 +189,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['user_login'])) {
             display: inline-block;
             text-align: center;
             text-decoration: none;
-        ">Admin Login</a>
+            font-weight: bold;
+        ">Login as Admin</a>
     </div>
 
 </div>

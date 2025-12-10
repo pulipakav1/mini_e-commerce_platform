@@ -1,6 +1,13 @@
 
 <?php
+session_start();
 include 'db.php';
+
+// If user is already logged in, redirect to home
+if (isset($_SESSION['user_id'])) {
+    header("Location: home.php");
+    exit();
+}
 
 $error = "";
 $success = "";
@@ -51,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: login.php?signup=success");
             exit();
         } else {
-            $error = "Something went wrong!";
+            $error = "Registration failed: " . $stmt->error;
         }
         $stmt->close();
     }

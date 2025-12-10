@@ -11,36 +11,62 @@ $user_id = $_SESSION['user_id'];
 $message = isset($_GET['message']) ? $_GET['message'] : "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_cart'])) {
-    $cart_id = intval($_POST['cart_id']);
-    $new_quantity = intval($_POST['quantity']);
-    
-    if ($new_quantity <= 0) {
-        $delete_stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ? AND user_id = ?");
-        $delete_stmt->bind_param("ii", $cart_id, $user_id);
-        $delete_stmt->execute();
-        $message = "Item removed";
-    } else {
-        $cart_stmt = $conn->prepare("SELECT product_id FROM cart WHERE cart_id = ? AND user_id = ?");
-        $cart_stmt->bind_param("ii", $cart_id, $user_id);
-        $cart_stmt->execute();
-        $cart_result = $cart_stmt->get_result();
+    // Handle multiple cart items update using arrays
+    if (isset($_POST['cart_id']) && is_array($_POST['cart_id']) && isset($_POST['quantity']) && is_array($_POST['quantity'])) {
+        $updated = 0;
+        $errors = [];
         
-        if ($cart_result->num_rows > 0) {
-            $cart_item = $cart_result->fetch_assoc();
-            $product_stmt = $conn->prepare("SELECT quantity FROM products WHERE product_id = ?");
-            $product_stmt->bind_param("i", $cart_item['product_id']);
-            $product_stmt->execute();
-            $product_result = $product_stmt->get_result();
-            $product = $product_result->fetch_assoc();
+        for ($i = 0; $i < count($_POST['cart_id']); $i++) {
+            $cart_id = intval($_POST['cart_id'][$i]);
+            $new_quantity = intval($_POST['quantity'][$i]);
             
-            if ($new_quantity > $product['quantity']) {
-                $message = "Only " . $product['quantity'] . " in stock";
+            if ($new_quantity <= 0) {
+                // Remove item if quantity is 0 or less
+                $delete_stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ? AND user_id = ?");
+                $delete_stmt->bind_param("ii", $cart_id, $user_id);
+                if ($delete_stmt->execute()) {
+                    $delete_stmt->close();
+                    $updated++;
+                } else {
+                    $errors[] = "Error removing item from cart";
+                    $delete_stmt->close();
+                }
             } else {
-                $update_stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ? AND user_id = ?");
-                $update_stmt->bind_param("iii", $new_quantity, $cart_id, $user_id);
-                $update_stmt->execute();
-                $message = "Updated";
+                // Verify cart item belongs to user
+                $cart_stmt = $conn->prepare("SELECT product_id FROM cart WHERE cart_id = ? AND user_id = ?");
+                $cart_stmt->bind_param("ii", $cart_id, $user_id);
+                $cart_stmt->execute();
+                $cart_result = $cart_stmt->get_result();
+                
+                if ($cart_result->num_rows > 0) {
+                    $cart_item = $cart_result->fetch_assoc();
+                    $product_stmt = $conn->prepare("SELECT quantity, product_name FROM products WHERE product_id = ?");
+                    $product_stmt->bind_param("i", $cart_item['product_id']);
+                    $product_stmt->execute();
+                    $product_result = $product_stmt->get_result();
+                    $product = $product_result->fetch_assoc();
+                    
+                    if ($new_quantity > $product['quantity']) {
+                        $errors[] = $product['product_name'] . ": Only " . $product['quantity'] . " in stock";
+                    } else {
+                        $update_stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ? AND user_id = ?");
+                        $update_stmt->bind_param("iii", $new_quantity, $cart_id, $user_id);
+                        if ($update_stmt->execute()) {
+                            $update_stmt->close();
+                            $updated++;
+                        } else {
+                            $errors[] = "Error updating " . $product['product_name'];
+                            $update_stmt->close();
+                        }
+                    }
+                }
             }
+        }
+        
+        if (!empty($errors)) {
+            $message = implode("; ", $errors);
+        } else if ($updated > 0) {
+            $message = "Cart updated successfully";
         }
     }
 }
@@ -49,8 +75,13 @@ if (isset($_GET['remove'])) {
     $cart_id = intval($_GET['remove']);
     $delete_stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ? AND user_id = ?");
     $delete_stmt->bind_param("ii", $cart_id, $user_id);
-    $delete_stmt->execute();
-    $message = "Item removed";
+    if ($delete_stmt->execute()) {
+        $delete_stmt->close();
+        $message = "Item removed";
+    } else {
+        $message = "Error removing item: " . $delete_stmt->error;
+        $delete_stmt->close();
+    }
 }
 
 $cart_stmt = $conn->prepare("
@@ -130,8 +161,8 @@ input[type="number"] { width: 60px; padding: 5px; }
                             <td><?php echo htmlspecialchars($item['product_name']); ?></td>
                             <td>$<?php echo number_format($item['cost'], 2); ?></td>
                             <td>
-                                <input type="hidden" name="cart_id" value="<?php echo $item['cart_id']; ?>">
-                                <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" max="<?php echo $item['stock_quantity']; ?>" required>
+                                <input type="hidden" name="cart_id[]" value="<?php echo $item['cart_id']; ?>">
+                                <input type="number" name="quantity[]" value="<?php echo $item['quantity']; ?>" min="0" max="<?php echo $item['stock_quantity']; ?>" required>
                             </td>
                             <td><?php echo $item['stock_quantity']; ?></td>
                             <td>$<?php echo number_format($subtotal, 2); ?></td>

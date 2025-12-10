@@ -17,7 +17,7 @@ if ($admin_role != 'owner') {
 
 // Check if id is provided
 if (isset($_GET['id']) && !empty($_GET['id'])) {
-    $employee_id = $_GET['id'];
+    $employee_id = intval($_GET['id']);
 
     // Prepare delete query (using employees table)
     $stmt = $conn->prepare("DELETE FROM employees WHERE employee_id = ?");

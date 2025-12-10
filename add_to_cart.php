@@ -46,18 +46,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['product_id'])) {
                     $update_stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ?");
                     $update_stmt->bind_param("ii", $new_quantity, $cart_item['cart_id']);
                     if ($update_stmt->execute()) {
+                        $update_stmt->close();
                         $message = "Updated";
                     } else {
-                        $message = "Error updating cart";
+                        $message = "Error updating cart: " . $update_stmt->error;
+                        $update_stmt->close();
                     }
                 }
             } else {
                 $insert_stmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
                 $insert_stmt->bind_param("iii", $user_id, $product_id, $quantity);
                 if ($insert_stmt->execute()) {
+                    $insert_stmt->close();
                     $message = "Added to cart";
                 } else {
-                    $message = "Error adding to cart";
+                    $message = "Error adding to cart: " . $insert_stmt->error;
+                    $insert_stmt->close();
                 }
             }
         }
@@ -65,6 +69,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['product_id'])) {
 }
 
 $redirect = $_POST['redirect'] ?? 'home.php';
+// Validate redirect to prevent open redirect vulnerability
+$allowed_redirects = ['home.php', 'cart.php', 'home_living.php', 'cups_bottles.php', 'style_accessories.php', 'tulip_collection.php', 'indoor_plants.php'];
+$redirect = in_array($redirect, $allowed_redirects) ? $redirect : 'home.php';
 header("Location: " . $redirect . "?message=" . urlencode($message));
 exit();
 

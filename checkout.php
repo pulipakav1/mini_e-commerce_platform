@@ -46,58 +46,114 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
     if (!$valid) {
         $message = implode(" ", $errors);
     } else {
-        $cart_result->data_seek(0);
-        $total_amount = 0;
-        while ($item = $cart_result->fetch_assoc()) {
-            $total_amount += $item['cost'] * $item['quantity'];
-        }
+        // Use transaction to ensure all operations succeed or fail together
+        mysqli_begin_transaction($conn);
         
-        $order_stmt = $conn->prepare("INSERT INTO orders (user_id, shipping_address, billing_address, total_amount) VALUES (?, ?, ?, ?)");
-        $order_stmt->bind_param("issd", $user_id, $user['shipping_address'], $user['billing_address'], $total_amount);
-        
-        if ($order_stmt->execute()) {
-            $order_id = $order_stmt->insert_id;
+        try {
+            $cart_result->data_seek(0);
+            $total_amount = 0;
+            while ($item = $cart_result->fetch_assoc()) {
+                $total_amount += $item['cost'] * $item['quantity'];
+            }
             
+            // Create order
+            $order_stmt = $conn->prepare("INSERT INTO orders (user_id, shipping_address, billing_address, total_amount) VALUES (?, ?, ?, ?)");
+            $order_stmt->bind_param("issd", $user_id, $user['shipping_address'], $user['billing_address'], $total_amount);
+            
+            if (!$order_stmt->execute()) {
+                throw new Exception("Failed to create order: " . $order_stmt->error);
+            }
+            
+            $order_id = $order_stmt->insert_id;
+            $order_stmt->close();
+            
+            // Create order items and update inventory
             $cart_result->data_seek(0);
             while ($item = $cart_result->fetch_assoc()) {
+                // Insert order item
                 $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)");
                 $item_stmt->bind_param("iiid", $order_id, $item['product_id'], $item['quantity'], $item['cost']);
-                $item_stmt->execute();
                 
+                if (!$item_stmt->execute()) {
+                    throw new Exception("Failed to create order item: " . $item_stmt->error);
+                }
+                $item_stmt->close();
+                
+                // Update product quantity
                 $new_quantity = $item['stock_quantity'] - $item['quantity'];
                 $update_stmt = $conn->prepare("UPDATE products SET quantity = ? WHERE product_id = ?");
                 $update_stmt->bind_param("ii", $new_quantity, $item['product_id']);
-                $update_stmt->execute();
                 
+                if (!$update_stmt->execute()) {
+                    throw new Exception("Failed to update product quantity: " . $update_stmt->error);
+                }
+                $update_stmt->close();
+                
+                // Update inventory table if record exists
                 $inv_check = $conn->prepare("SELECT inventory_id FROM inventory WHERE product_id = ?");
                 $inv_check->bind_param("i", $item['product_id']);
                 $inv_check->execute();
                 $inv_result = $inv_check->get_result();
+                $inv_check->close();
                 
                 if ($inv_result->num_rows > 0) {
                     $update_inv = $conn->prepare("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?");
                     $update_inv->bind_param("ii", $new_quantity, $item['product_id']);
-                    $update_inv->execute();
+                    
+                    if (!$update_inv->execute()) {
+                        throw new Exception("Failed to update inventory: " . $update_inv->error);
+                    }
+                    $update_inv->close();
+                } else {
+                    // Create inventory record if it doesn't exist
+                    $insert_inv = $conn->prepare("INSERT INTO inventory (product_id, quantity, last_updated) VALUES (?, ?, CURRENT_TIMESTAMP)");
+                    $insert_inv->bind_param("ii", $item['product_id'], $new_quantity);
+                    
+                    if (!$insert_inv->execute()) {
+                        throw new Exception("Failed to create inventory record: " . $insert_inv->error);
+                    }
+                    $insert_inv->close();
                 }
             }
             
+            // Create receipt
             $receipt_number = "REC-" . str_pad($order_id, 6, "0", STR_PAD_LEFT);
             $receipt_stmt = $conn->prepare("INSERT INTO receipts (order_id, receipt_number) VALUES (?, ?)");
             $receipt_stmt->bind_param("is", $order_id, $receipt_number);
-            $receipt_stmt->execute();
             
+            if (!$receipt_stmt->execute()) {
+                throw new Exception("Failed to create receipt: " . $receipt_stmt->error);
+            }
+            $receipt_stmt->close();
+            
+            // Create payment record
             $payment_stmt = $conn->prepare("INSERT INTO payment (order_id, payment_method, total_amount) VALUES (?, 'Cash on Delivery', ?)");
             $payment_stmt->bind_param("id", $order_id, $total_amount);
-            $payment_stmt->execute();
             
+            if (!$payment_stmt->execute()) {
+                throw new Exception("Failed to create payment record: " . $payment_stmt->error);
+            }
+            $payment_stmt->close();
+            
+            // Clear cart
             $clear_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
             $clear_cart->bind_param("i", $user_id);
-            $clear_cart->execute();
+            
+            if (!$clear_cart->execute()) {
+                throw new Exception("Failed to clear cart: " . $clear_cart->error);
+            }
+            $clear_cart->close();
+            
+            // Commit transaction - all operations successful
+            mysqli_commit($conn);
             
             header("Location: order_confirmation.php?order_id=" . $order_id . "&receipt=" . $receipt_number);
             exit();
-        } else {
-            $message = "Error creating order";
+            
+        } catch (Exception $e) {
+            // Rollback transaction on any error
+            mysqli_rollback($conn);
+            $message = "Error processing order: " . $e->getMessage();
         }
     }
 }

@@ -14,7 +14,7 @@ if (!isset($_GET['id'])) {
     exit();
 }
 
-$product_id = $_GET['id'];
+$product_id = intval($_GET['id']);
 $error = "";
 $success = "";
 
@@ -33,9 +33,9 @@ $product = $result->fetch_assoc();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
     $product_name = trim($_POST['product_name']);
     $product_description = trim($_POST['product_description']);
-    $category_id = trim($_POST['category_id']);
-    $cost = trim($_POST['cost']);
-    $quantity = trim($_POST['quantity']);
+    $category_id = intval($_POST['category_id']);
+    $cost = floatval($_POST['cost']);
+    $quantity = intval($_POST['quantity']);
     // Get product image from images table if exists
     $img_stmt = $conn->prepare("SELECT file_path FROM images WHERE product_id=? LIMIT 1");
     $img_stmt->bind_param("i", $product_id);
@@ -83,9 +83,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
     // Update database (products table doesn't have product_image field)
     if (empty($error)) {
         $stmt = $conn->prepare("UPDATE products SET product_name=?, product_description=?, category_id=?, cost=?, quantity=? WHERE product_id=?");
-        $stmt->bind_param("ssiddi", $product_name, $product_description, $category_id, $cost, $quantity, $product_id);
+        $stmt->bind_param("ssidii", $product_name, $product_description, $category_id, $cost, $quantity, $product_id);
 
         if ($stmt->execute()) {
+            // Update inventory table
+            $inv_check = $conn->prepare("SELECT inventory_id FROM inventory WHERE product_id = ?");
+            $inv_check->bind_param("i", $product_id);
+            $inv_check->execute();
+            $inv_result = $inv_check->get_result();
+            
+            if ($inv_result->num_rows > 0) {
+                // Update existing inventory
+                $update_inv = $conn->prepare("UPDATE inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?");
+                $update_inv->bind_param("ii", $quantity, $product_id);
+                $update_inv->execute();
+                $update_inv->close();
+            } else {
+                // Create inventory record if it doesn't exist
+                $insert_inv = $conn->prepare("INSERT INTO inventory (product_id, quantity, last_updated) VALUES (?, ?, CURRENT_TIMESTAMP)");
+                $insert_inv->bind_param("ii", $product_id, $quantity);
+                $insert_inv->execute();
+                $insert_inv->close();
+            }
+            $inv_check->close();
+            
             $success = "Product updated successfully!";
             // Refresh product data
             $stmt = $conn->prepare("SELECT * FROM products WHERE product_id = ?");
@@ -93,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_product'])) {
             $stmt->execute();
             $product = $stmt->get_result()->fetch_assoc();
         } else {
-            $error = "Failed to update product!";
+            $error = "Failed to update product: " . $stmt->error;
         }
     }
 }
