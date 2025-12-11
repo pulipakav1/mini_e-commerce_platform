@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$message = "";
+$message = isset($_GET['message']) ? $_GET['message'] : "";
 
 $user_stmt = $conn->prepare("SELECT address FROM users WHERE user_id = ?");
 $user_stmt->bind_param("i", $user_id);
@@ -36,29 +36,44 @@ if ($cart_result->num_rows == 0) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
-    $cart_result->data_seek(0);
-    $valid = true;
-    $errors = [];
+    // Refetch cart items to ensure we have fresh data
+    $cart_check_stmt = $conn->prepare("
+        SELECT c.cart_id, c.quantity, p.product_id, p.product_name, p.cost, p.quantity as stock_quantity
+        FROM cart c
+        JOIN products p ON c.product_id = p.product_id
+        WHERE c.user_id = ?
+    ");
+    $cart_check_stmt->bind_param("i", $user_id);
+    $cart_check_stmt->execute();
+    $cart_check_result = $cart_check_stmt->get_result();
     
-    while ($item = $cart_result->fetch_assoc()) {
-        if ($item['quantity'] > $item['stock_quantity']) {
-            $valid = false;
-            $errors[] = $item['product_name'] . " - Only " . $item['stock_quantity'] . " available";
-        }
-    }
-    
-    if (!$valid) {
-        $message = implode(" ", $errors);
+    if ($cart_check_result->num_rows == 0) {
+        $message = "Your cart is empty!";
+        $cart_check_stmt->close();
     } else {
-        // Use transaction to ensure all operations succeed or fail together
-        mysqli_begin_transaction($conn);
+        $valid = true;
+        $errors = [];
         
-        try {
-            $cart_result->data_seek(0);
-            $total_amount = 0;
-            while ($item = $cart_result->fetch_assoc()) {
-                $total_amount += $item['cost'] * $item['quantity'];
+        while ($item = $cart_check_result->fetch_assoc()) {
+            if ($item['quantity'] > $item['stock_quantity']) {
+                $valid = false;
+                $errors[] = $item['product_name'] . " - Only " . $item['stock_quantity'] . " available";
             }
+        }
+        
+        if (!$valid) {
+            $message = implode(" ", $errors);
+            $cart_check_stmt->close();
+        } else {
+            // Use transaction to ensure all operations succeed or fail together
+            mysqli_begin_transaction($conn);
+            
+            try {
+                $cart_check_result->data_seek(0);
+                $total_amount = 0;
+                while ($item = $cart_check_result->fetch_assoc()) {
+                    $total_amount += $item['cost'] * $item['quantity'];
+                }
             
             // Create order
             $order_stmt = $conn->prepare("INSERT INTO orders (user_id, address, total_amount) VALUES (?, ?, ?)");
@@ -72,8 +87,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             $order_stmt->close();
             
             // Create order items and update inventory
-            $cart_result->data_seek(0);
-            while ($item = $cart_result->fetch_assoc()) {
+            $cart_check_result->data_seek(0);
+            while ($item = $cart_check_result->fetch_assoc()) {
                 // Insert order item
                 $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)");
                 $item_stmt->bind_param("iiid", $order_id, $item['product_id'], $item['quantity'], $item['cost']);
@@ -130,9 +145,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             }
             $receipt_stmt->close();
             
-            
             // Get payment method from form (default to Cash on Delivery)
             $payment_method = isset($_POST['payment_method']) ? trim($_POST['payment_method']) : 'Cash on Delivery';
+            if (empty($payment_method)) {
+                $payment_method = 'Cash on Delivery';
+            }
             
             // Create payment record
             $payment_stmt = $conn->prepare("INSERT INTO payment (order_id, payment_method, total_amount) VALUES (?, ?, ?)");
@@ -158,15 +175,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             // Clean any output before redirect
             ob_end_clean();
             
+            $cart_check_stmt->close();
+            
             // Redirect to order confirmation
             $redirect_url = "order_confirmation.php?order_id=" . intval($order_id) . "&receipt=" . urlencode($receipt_number);
             header("Location: " . $redirect_url);
             exit();
             
-        } catch (Exception $e) {
-            // Rollback transaction on any error
-            mysqli_rollback($conn);
-            $message = "Error processing order: " . $e->getMessage();
+            } catch (Exception $e) {
+                // Rollback transaction on any error
+                mysqli_rollback($conn);
+                $message = "Error processing order: " . $e->getMessage();
+                $cart_check_stmt->close();
+            }
         }
     }
 }
@@ -252,7 +273,9 @@ $tulip_image = "images/tulip-field.jpg";
     <h2>Checkout</h2>
     
     <?php if ($message != ""): ?>
-        <div class="message"><?php echo htmlspecialchars($message); ?></div>
+        <div class="message" style="background: <?php echo (strpos($message, 'Error') !== false || strpos($message, 'empty') !== false || strpos($message, 'Only') !== false) ? '#f8d7da' : '#d4edda'; ?>; color: <?php echo (strpos($message, 'Error') !== false || strpos($message, 'empty') !== false || strpos($message, 'Only') !== false) ? '#721c24' : '#155724'; ?>; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <?php echo htmlspecialchars($message); ?>
+        </div>
     <?php endif; ?>
     
     <div class="checkout-section">
@@ -289,34 +312,33 @@ $tulip_image = "images/tulip-field.jpg";
         </div>
     </div>
     
-    <div class="checkout-section">
-        <h3>Payment Method</h3>
-        <div class="payment-methods" style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                <input type="radio" name="payment_method" value="Cash on Delivery" checked style="margin-right: 8px; cursor: pointer;">
-                <strong>Cash on Delivery</strong>
-                <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Pay when the order is delivered</span>
-            </label>
-            <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                <input type="radio" name="payment_method" value="Credit Card" style="margin-right: 8px; cursor: pointer;">
-                <strong>Credit Card</strong>
-                <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Card payment processed on delivery</span>
-            </label>
-        </div>
-        <style>
-            .payment-methods label:hover {
-                border-color: #1d4ed8;
-                background-color: #f0f4ff;
-            }
-            .payment-methods input[type="radio"]:checked + strong {
-                color: #1d4ed8;
-            }
-        </style>
-    </div>
-    
     <div class="total-section">
         <h3>Total: $<?php echo number_format($total_amount, 2); ?></h3>
         <form method="POST">
+            <div class="checkout-section" style="margin-top: 20px; margin-bottom: 20px;">
+                <h3>Payment Method</h3>
+                <div class="payment-methods" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                        <input type="radio" name="payment_method" value="Cash on Delivery" checked style="margin-right: 8px; cursor: pointer;">
+                        <strong>Cash on Delivery</strong>
+                        <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Pay when the order is delivered</span>
+                    </label>
+                    <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                        <input type="radio" name="payment_method" value="Credit Card" style="margin-right: 8px; cursor: pointer;">
+                        <strong>Credit Card</strong>
+                        <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Card payment processed on delivery</span>
+                    </label>
+                </div>
+                <style>
+                    .payment-methods label:hover {
+                        border-color: #1d4ed8;
+                        background-color: #f0f4ff;
+                    }
+                    .payment-methods input[type="radio"]:checked + strong {
+                        color: #1d4ed8;
+                    }
+                </style>
+            </div>
             <button type="submit" name="place_order" class="btn btn-success">Place Order</button>
         </form>
         <div style="margin-top: 15px; text-align: center;">
