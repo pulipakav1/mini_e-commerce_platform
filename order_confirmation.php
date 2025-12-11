@@ -4,6 +4,7 @@ session_start();
 include "db.php";
 
 if (!isset($_SESSION['user_id'])) {
+    ob_end_clean();
     header("Location: auth.php");
     exit();
 }
@@ -13,30 +14,41 @@ $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 $receipt_number = isset($_GET['receipt']) ? htmlspecialchars($_GET['receipt']) : "";
 
 if ($order_id == 0) {
+    ob_end_clean();
     header("Location: my_orders.php");
     exit();
 }
 
 $order_stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = ? AND user_id = ?");
+if (!$order_stmt) {
+    die("Database error: " . $conn->error);
+}
 $order_stmt->bind_param("ii", $order_id, $user_id);
 $order_stmt->execute();
 $order_result = $order_stmt->get_result();
 
 if ($order_result->num_rows == 0) {
+    $order_stmt->close();
+    ob_end_clean();
     header("Location: my_orders.php");
     exit();
 }
 
 $order = $order_result->fetch_assoc();
+$order_stmt->close();
 
 // Get payment method
 $payment_stmt = $conn->prepare("SELECT payment_method FROM payment WHERE order_id = ?");
-$payment_stmt->bind_param("i", $order_id);
-$payment_stmt->execute();
-$payment_result = $payment_stmt->get_result();
-$payment_data = $payment_result->fetch_assoc();
-$payment_method = $payment_data['payment_method'] ?? 'Cash on Delivery';
-$payment_stmt->close();
+if (!$payment_stmt) {
+    $payment_method = 'Cash on Delivery';
+} else {
+    $payment_stmt->bind_param("i", $order_id);
+    $payment_stmt->execute();
+    $payment_result = $payment_stmt->get_result();
+    $payment_data = $payment_result->fetch_assoc();
+    $payment_method = $payment_data['payment_method'] ?? 'Cash on Delivery';
+    $payment_stmt->close();
+}
 
 $items_stmt = $conn->prepare("
     SELECT oi.*, p.product_name
@@ -44,9 +56,15 @@ $items_stmt = $conn->prepare("
     JOIN products p ON oi.product_id = p.product_id
     WHERE oi.order_id = ?
 ");
+if (!$items_stmt) {
+    die("Database error: " . $conn->error);
+}
 $items_stmt->bind_param("i", $order_id);
 $items_stmt->execute();
 $items_result = $items_stmt->get_result();
+if (!$items_result) {
+    die("Database error: " . $conn->error);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,21 +161,31 @@ $tulip_image = "images/tulip-field.jpg";
         <tbody>
             <?php 
             $grand_total = 0;
-            while ($item = $items_result->fetch_assoc()): 
-                $subtotal = $item['unit_price'] * $item['quantity'];
-                $grand_total += $subtotal;
-            ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                    <td>$<?php echo number_format($item['unit_price'], 2); ?></td>
-                    <td><?php echo $item['quantity']; ?></td>
-                    <td>$<?php echo number_format($subtotal, 2); ?></td>
+            if ($items_result && $items_result->num_rows > 0) {
+                while ($item = $items_result->fetch_assoc()): 
+                    $subtotal = $item['unit_price'] * $item['quantity'];
+                    $grand_total += $subtotal;
+                ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                        <td>$<?php echo number_format($item['unit_price'], 2); ?></td>
+                        <td><?php echo $item['quantity']; ?></td>
+                        <td>$<?php echo number_format($subtotal, 2); ?></td>
+                    </tr>
+                <?php endwhile; ?>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right;">Total:</td>
+                    <td>$<?php echo number_format($grand_total > 0 ? $grand_total : $order['total_amount'], 2); ?></td>
                 </tr>
-            <?php endwhile; ?>
-            <tr class="total-row">
-                <td colspan="3" style="text-align: right;">Total:</td>
-                <td>$<?php echo number_format($grand_total, 2); ?></td>
-            </tr>
+            <?php } else { ?>
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px;">No items found for this order.</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right;">Total:</td>
+                    <td>$<?php echo number_format($order['total_amount'], 2); ?></td>
+                </tr>
+            <?php } ?>
         </tbody>
     </table>
     

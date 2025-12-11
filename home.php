@@ -200,13 +200,15 @@ else echo 'Home';
         display: none;
         position: absolute;
         right: 0;
+        top: 100%;
+        margin-top: 5px;
         background-color: #fff;
         min-width: 150px;
         box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-        z-index: 1000;
+        z-index: 1002;
         border-radius: 8px;
-        margin-top: 5px;
         overflow: hidden;
+        border: 1px solid #e5e7eb;
     }
     
     .dropdown-content a {
@@ -215,14 +217,15 @@ else echo 'Home';
         text-decoration: none;
         display: block;
         font-size: 14px;
-        transition: background 0.2s;
+        transition: background-color 0.2s;
     }
     
     .dropdown-content a:hover {
         background-color: #f1f1f1;
+        color: #1d4ed8;
     }
     
-    .user-dropdown:hover .dropdown-content {
+    .user-dropdown.active .dropdown-content {
         display: block;
     }
 
@@ -501,13 +504,52 @@ if (!file_exists($tulip_image)) {
             </svg>
             <span>Orders</span>
         </a>
-        <div class="user-dropdown">
-            <div class="user-name"><?php echo $name; ?> ▼</div>
-            <div class="dropdown-content">
-                <a href="profile.php">Profile</a>
-                <a href="auth.php?action=logout">Logout</a>
+        <div class="user-dropdown" id="userDropdown">
+            <div class="user-name" onclick="toggleDropdown()" style="cursor: pointer;"><?php echo $name; ?> ▼</div>
+            <div class="dropdown-content" id="dropdownMenu">
+                <a href="profile.php" onclick="closeDropdown()">Profile</a>
+                <a href="auth.php?action=logout" onclick="closeDropdown()">Logout</a>
             </div>
         </div>
+        <script>
+        function toggleDropdown() {
+            var dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function closeDropdown() {
+            var dropdown = document.getElementById('userDropdown');
+            dropdown.classList.remove('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            var dropdown = document.getElementById('userDropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+        </script>
+        <script>
+        function toggleDropdown() {
+            var dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function closeDropdown() {
+            var dropdown = document.getElementById('userDropdown');
+            dropdown.classList.remove('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            var dropdown = document.getElementById('userDropdown');
+            var dropdownMenu = document.getElementById('dropdownMenu');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+        </script>
     </div>
 </div>
 

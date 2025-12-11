@@ -172,10 +172,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             // Commit transaction - all operations successful
             mysqli_commit($conn);
             
+            $cart_check_stmt->close();
+            
             // Clean any output before redirect
             ob_end_clean();
-            
-            $cart_check_stmt->close();
             
             // Redirect to order confirmation
             $redirect_url = "order_confirmation.php?order_id=" . intval($order_id) . "&receipt=" . urlencode($receipt_number);
@@ -186,7 +186,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
                 // Rollback transaction on any error
                 mysqli_rollback($conn);
                 $message = "Error processing order: " . $e->getMessage();
-                $cart_check_stmt->close();
+                error_log("Checkout Error: " . $e->getMessage()); // Log for debugging
+                if (isset($cart_check_stmt)) {
+                    $cart_check_stmt->close();
+                }
             }
         }
     }
