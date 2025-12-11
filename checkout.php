@@ -1,7 +1,11 @@
 <?php
-ob_start(); // Start output buffering
 session_start();
 include "db.php";
+
+// Start output buffering only if not already started
+if (!ob_get_level()) {
+    ob_start();
+}
 
 if (!isset($_SESSION['user_id'])) {
     ob_end_clean();
@@ -175,12 +179,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             $cart_check_stmt->close();
             
             // Clean any output before redirect
-            if (ob_get_level() > 0) {
+            while (ob_get_level() > 0) {
                 ob_end_clean();
             }
             
+            // Debug: Log the redirect
+            error_log("Checkout: Redirecting to order_confirmation.php with order_id=$order_id and receipt=$receipt_number");
+            
             // Redirect to order confirmation
             $redirect_url = "order_confirmation.php?order_id=" . intval($order_id) . "&receipt=" . urlencode($receipt_number);
+            
+            // Verify order was created successfully
+            if (empty($order_id) || $order_id == 0) {
+                throw new Exception("Invalid order_id after creation: $order_id");
+            }
+            
+            // Verify redirect URL is valid
+            if (empty($redirect_url)) {
+                throw new Exception("Redirect URL is empty");
+            }
+            
+            // Check if headers already sent
+            if (headers_sent($file, $line)) {
+                die("ERROR: Headers already sent in $file on line $line. Cannot redirect to order confirmation.");
+            }
+            
+            // Perform redirect
             header("Location: " . $redirect_url);
             exit();
             
@@ -195,6 +219,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             }
         }
     }
+}
+
+// Ensure cart result is available for display
+if (!isset($cart_result) || $cart_result->num_rows == 0) {
+    // This should not happen as we check earlier, but just in case
+    ob_end_clean();
+    header("Location: cart.php?message=" . urlencode("Your cart is empty!"));
+    exit();
 }
 
 $cart_result->data_seek(0);

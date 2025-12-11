@@ -1,11 +1,16 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+// Start session first
 session_start();
+
+// Include database
 include "db.php";
 
-// Enable error reporting for debugging (remove in production)
-// error_reporting(E_ALL);
-// ini_set('display_errors', 1);
-
+// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: auth.php");
     exit();
@@ -15,9 +20,9 @@ $user_id = $_SESSION['user_id'];
 $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 $receipt_number = isset($_GET['receipt']) ? htmlspecialchars($_GET['receipt']) : "";
 
+// Validate order ID
 if ($order_id == 0) {
-    header("Location: my_orders.php?error=no_order_id");
-    exit();
+    die("<h1>Error</h1><p>No order ID provided.</p><p><a href='my_orders.php'>View Orders</a></p>");
 }
 
 // Fetch order with better error handling
@@ -41,7 +46,19 @@ $order_result = $order_stmt->get_result();
 if ($order_result->num_rows == 0) {
     $order_stmt->close();
     error_log("Order Confirmation: Order ID $order_id not found for user $user_id");
-    header("Location: my_orders.php?error=order_not_found");
+    // Show error message instead of blank page
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head><title>Order Not Found</title></head>
+    <body style="font-family: Arial; padding: 20px;">
+        <h1>Order Not Found</h1>
+        <p>Order ID: <?php echo htmlspecialchars($order_id); ?></p>
+        <p>User ID: <?php echo htmlspecialchars($user_id); ?></p>
+        <p><a href='my_orders.php'>View All Orders</a></p>
+    </body>
+    </html>
+    <?php
     exit();
 }
 
@@ -82,6 +99,8 @@ if (!$items_stmt) {
         // Don't close here, we'll close after using it
     }
 }
+
+// Ensure no output before HTML
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,6 +108,12 @@ if (!$items_stmt) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Confirmation</title>
+<script>
+// Debug: Log that page loaded
+console.log('Order Confirmation Page Loaded');
+console.log('Order ID: <?php echo $order_id; ?>');
+console.log('Receipt: <?php echo htmlspecialchars($receipt_number, ENT_QUOTES); ?>');
+</script>
 <style>
 body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 0; min-height: 100vh; }
 
@@ -154,9 +179,10 @@ $tulip_image = "images/tulip-field.jpg";
 <div class="content-wrapper">
 
 <div class="container">
+    <!-- DEBUG: Container started -->
     <div class="success-message">
-        <h2>Order Placed</h2>
-        <p>Your order has been received</p>
+        <h2>Order Placed Successfully!</h2>
+        <p>Your order has been received and processed.</p>
     </div>
     
     <div class="receipt-box">
