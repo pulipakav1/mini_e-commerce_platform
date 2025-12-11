@@ -50,6 +50,10 @@ $employeeCount = $conn->query("SELECT COUNT(*) as count FROM employees")->fetch_
             <h3>Orders</h3>
             <p><?php echo $orderCount; ?></p>
         </a>
+        <a href="sales_report.php" class="stat" style="background: #10b981;">
+            <h3>Sales Report</h3>
+            <p>View</p>
+        </a>
         <a href="hr.php" class="stat">
             <h3>Employees</h3>
             <p><?php echo $employeeCount; ?></p>

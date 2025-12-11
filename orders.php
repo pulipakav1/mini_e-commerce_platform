@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'db.php'; // Ensure the path to db.php is correct
+include 'db.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
@@ -8,230 +8,206 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// Restrict inventory_manager - they should only view products, not manage orders
-$admin_role = $_SESSION['admin_role'];
-if ($admin_role == 'inventory_manager') {
-    // Redirect to products page for inventory managers
-    header("Location: products.php");
+// Only owner can access orders page
+if ($_SESSION['admin_role'] != 'owner') {
+    header("Location: dashboard.php");
     exit();
 }
 
-// Handle deletion
-if (isset($_GET['delete_id'])) {
-    $delete_id = intval($_GET['delete_id']);
+// Fetch statistics
+$total_users = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'client'")->fetch_assoc()['count'];
+$total_orders = $conn->query("SELECT COUNT(*) as count FROM orders")->fetch_assoc()['count'];
+$total_revenue = $conn->query("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders")->fetch_assoc()['total'];
 
-    // First, delete the image files from images table if exists
-    $img_query = $conn->prepare("SELECT file_path FROM images WHERE product_id = ?");
-    $img_query->bind_param("i", $delete_id);
-    $img_query->execute();
-    $img_result = $img_query->get_result();
-    while ($img_row = $img_result->fetch_assoc()) {
-        if (!empty($img_row['file_path']) && file_exists($img_row['file_path'])) {
-            unlink($img_row['file_path']);
-        }
-    }
-    // Delete from images table
-    $del_img = $conn->prepare("DELETE FROM images WHERE product_id = ?");
-    $del_img->bind_param("i", $delete_id);
-    $del_img->execute();
-
-    // Delete the product from database
-    $stmt = $conn->prepare("DELETE FROM products WHERE product_id = ?");
-    $stmt->bind_param("i", $delete_id);
-    $stmt->execute();
-    header("Location: products.php"); // reload page
-    exit();
-}
-
-// Handle search/filter
-$search = "";
-if (isset($_GET['search'])) {
-    $search = trim($_GET['search']);
-    $search_param = "%".$search."%";
-    // Only search product_name with LIKE, category_id should be exact match
-    $stmt = $conn->prepare("SELECT * FROM products WHERE product_name LIKE ?");
-    $stmt->bind_param("s", $search_param);
-    $stmt->execute();
-    $result = $stmt->get_result();
-} else {
-    $result = $conn->query("SELECT * FROM products");
-}
+// Fetch all orders with user information
+$orders_query = "SELECT o.*, u.name as user_name, u.email as user_email, 
+                  r.receipt_number 
+                  FROM orders o 
+                  LEFT JOIN users u ON o.user_id = u.user_id 
+                  LEFT JOIN receipts r ON o.order_id = r.order_id 
+                  ORDER BY o.order_date DESC";
+$orders_result = $conn->query($orders_query);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manage Products</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f5f5;
-        margin: 0;
-        padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
 
-    .back-btn {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        font-size: 18px;
-        color: #1d4ed8;
-        text-decoration: none;
-        font-weight: bold;
-    }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: bold;
+        }
 
-    .back-btn:hover {
-        color: #0d62d2;
-    }
+        .back-btn:hover {
+            color: #0d62d2;
+        }
 
-    .container {
-        max-width: 1000px;
-        margin: 80px auto 50px;
-        padding: 30px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
+        .container {
+            max-width: 1200px;
+            margin: 80px auto 50px;
+            padding: 30px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-    h2 {
-        text-align: center;
-        margin-bottom: 20px;
-    }
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
 
-    .search-form {
-        text-align: right;
-        margin-bottom: 15px;
-    }
+        .stats-section {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
 
-    .search-form input[type="text"] {
-        padding: 6px 10px;
-        font-size: 14px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
+        .stat-card {
+            background: linear-gradient(135deg, #1d4ed8 0%, #0d62d2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 200px;
+            margin: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
 
-    .search-form button {
-        padding: 6px 12px;
-        background-color: #1d4ed8;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-    }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
 
-    .search-form button:hover {
-        background-color: #0d62d2;
-    }
+        .stat-card p {
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+        }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
+        .stat-card.revenue {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
 
-    th, td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: center;
-        vertical-align: middle;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
 
-    th {
-        background-color: #1d4ed8;
-        color: white;
-    }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
 
-    tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
+        th {
+            background-color: #1d4ed8;
+            color: white;
+            text-align: center;
+        }
 
-    img.product-img {
-        max-width: 100px;
-        max-height: 80px;
-        border-radius: 6px;
-    }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
 
-    .action-btn {
-        display: inline-block;
-        padding: 6px 12px;
-        margin: 2px;
-        background-color: #1d4ed8;
-        color: white;
-        text-decoration: none;
-        border-radius: 6px;
-        font-size: 14px;
-        width: 60px;
-        text-align: center;
-    }
+        tr:hover {
+            background-color: #f0f0f0;
+        }
 
-    .action-btn:hover {
-        background-color: #0d62d2;
-    }
+        .view-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #1d4ed8;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+        }
 
-</style>
+        .view-btn:hover {
+            background-color: #0d62d2;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
 
-<a href="dashboard.php" class="back-btn">Back to Dashboard</a>
+<a href="dashboard.php" class="back-btn">← Back to Dashboard</a>
 
 <div class="container">
-    <h2>Manage Products</h2>
+    <h2>Orders Management</h2>
 
-    <!-- Search Form -->
-    <form method="GET" class="search-form">
-        <input type="text" name="search" placeholder="Search products..." value="<?php echo htmlspecialchars($search); ?>">
-        <button type="submit">Search</button>
-    </form>
+    <!-- Statistics Section -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <h3>Total Users</h3>
+            <p><?php echo number_format($total_users); ?></p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Orders</h3>
+            <p><?php echo number_format($total_orders); ?></p>
+        </div>
+        <div class="stat-card revenue">
+            <h3>Total Revenue</h3>
+            <p>$<?php echo number_format($total_revenue, 2); ?></p>
+        </div>
+    </div>
 
-    <!-- Products Table -->
+    <!-- Orders Table -->
+    <h3 style="margin-top: 30px; margin-bottom: 15px;">Order History</h3>
     <table>
         <thead>
             <tr>
-                <th>Category ID</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Image</th>
-                <th>Cost</th>
-                <th>Quantity</th>
+                <th>Order ID</th>
+                <th>Customer Name</th>
+                <th>Email</th>
+                <th>Order Date</th>
+                <th>Receipt Number</th>
+                <th>Total Amount</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <?php if ($result->num_rows > 0): ?>
-                <?php while ($row = $result->fetch_assoc()): ?>
+            <?php if ($orders_result && $orders_result->num_rows > 0): ?>
+                <?php while ($order = $orders_result->fetch_assoc()): ?>
                     <tr>
-                        <td><?php echo $row['category_id']; ?></td>
-                        <td><?php echo htmlspecialchars($row['product_name']); ?></td>
-                        <td><?php echo htmlspecialchars($row['product_description']); ?></td>
-                        <td>
-                            <?php 
-                            // Get image from images table
-                            $prod_img = $conn->prepare("SELECT file_path FROM images WHERE product_id=? LIMIT 1");
-                            $prod_img->bind_param("i", $row['product_id']);
-                            $prod_img->execute();
-                            $prod_img_result = $prod_img->get_result();
-                            $prod_img_data = $prod_img_result->fetch_assoc();
-                            if($prod_img_data && !empty($prod_img_data['file_path'])): 
-                            ?>
-                                <img src="<?php echo htmlspecialchars($prod_img_data['file_path']); ?>" alt="Product Image" class="product-img">
-                            <?php else: ?>
-                                N/A
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $row['cost']; ?></td>
-                        <td><?php echo $row['quantity']; ?></td>
-                        <td>
-                            <a href="products.php?action=edit&id=<?php echo $row['product_id']; ?>" class="action-btn">Edit</a>
-                            <a href="products.php?delete_id=<?php echo $row['product_id']; ?>" class="action-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                        <td style="text-align: center;"><?php echo $order['order_id']; ?></td>
+                        <td><?php echo htmlspecialchars($order['user_name'] ?? 'N/A'); ?></td>
+                        <td><?php echo htmlspecialchars($order['user_email'] ?? 'N/A'); ?></td>
+                        <td><?php echo date('Y-m-d H:i', strtotime($order['order_date'])); ?></td>
+                        <td><?php echo htmlspecialchars($order['receipt_number'] ?? 'N/A'); ?></td>
+                        <td style="text-align: right;">$<?php echo number_format($order['total_amount'], 2); ?></td>
+                        <td style="text-align: center;">
+                            <a href="order_details.php?id=<?php echo $order['order_id']; ?>" class="view-btn">View</a>
                         </td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="7">No products found.</td>
+                    <td colspan="7" class="no-orders">No orders found.</td>
                 </tr>
             <?php endif; ?>
         </tbody>

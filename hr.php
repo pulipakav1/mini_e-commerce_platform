@@ -1,6 +1,13 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 include 'db.php';
+
+// Check database connection
+if (!$conn) {
+    ob_end_clean();
+    die("Database connection failed. Please check your database configuration.");
+}
 
 $error = "";
 $success = "";
@@ -15,13 +22,14 @@ if (!$table_exists) {
     // Handle setup
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['setup'])) {
         try {
-            // Step 1: Create employees table (no password, no userid)
+            // Step 1: Create employees table (with password)
             $create_table = "CREATE TABLE employees (
                 employee_id INT AUTO_INCREMENT PRIMARY KEY,
                 employee_type ENUM('inventory_manager', 'business_manager', 'owner') NOT NULL,
                 salary DECIMAL(10,2),
                 hire_date DATE,
-                email VARCHAR(255)
+                email VARCHAR(255),
+                employee_password VARCHAR(255) NOT NULL
             )";
             
             if (!$conn->query($create_table)) {
@@ -35,13 +43,20 @@ if (!$table_exists) {
             $owner_result = $owner_check->get_result();
             
             if ($owner_result->num_rows == 0) {
-                // Create owner account (no password, no userid)
-                $insert_owner = $conn->prepare("INSERT INTO employees (employee_type, email, salary, hire_date) VALUES (?, ?, ?, CURDATE())");
-                $type = 'owner';
-                $email = 'owner@flowershop.com';
-                $salary = 100000.00;
+                // Get password from form and hash it
+                if (empty($_POST['owner_password'])) {
+                    throw new Exception("Password is required for owner account");
+                }
+                $owner_password = $_POST['owner_password'];
+                $hashed_password = password_hash($owner_password, PASSWORD_DEFAULT);
                 
-                $insert_owner->bind_param("ssd", $type, $email, $salary);
+                // Create owner account with password
+                $insert_owner = $conn->prepare("INSERT INTO employees (employee_type, email, salary, employee_password, hire_date) VALUES (?, ?, ?, ?, CURDATE())");
+                $type = 'owner';
+                $email = trim($_POST['owner_email']);
+                $salary = floatval($_POST['owner_salary']);
+                
+                $insert_owner->bind_param("ssds", $type, $email, $salary, $hashed_password);
                 
                 if ($insert_owner->execute()) {
                     $success .= "✓ Owner account created successfully!<br>";
@@ -92,9 +107,9 @@ if (!$table_exists) {
                 <?php if ($success): ?>
                     <div class="message success"><?php echo htmlspecialchars($success); ?></div>
                     <div class="credentials">
-                        <h3>Owner Login:</h3>
-                        <p><strong>Employee ID:</strong> Check the employee list to see the owner's ID</p>
-                        <p><strong>Note:</strong> Login using Employee ID (number) - no password required</p>
+                        <h3>Owner Account Created!</h3>
+                        <p><strong>Role:</strong> Owner</p>
+                        <p><strong>Email:</strong> owner@flowershop.com</p>
                         <p style="margin-top: 15px;">
                             <a href="admin_login.php" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">Go to Employee Login</a>
                         </p>
@@ -105,11 +120,14 @@ if (!$table_exists) {
                         <ul>
                             <li>Create the employees table (if it doesn't exist)</li>
                             <li>Create the owner account</li>
-                            <li>No password required - login with username only</li>
+                            <li>Set up password authentication</li>
                         </ul>
                     </div>
                     
                     <form method="POST">
+                        <input type="email" name="owner_email" placeholder="Owner Email" value="owner@flowershop.com" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                        <input type="number" step="0.01" name="owner_salary" placeholder="Salary" value="100000" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                        <input type="password" name="owner_password" placeholder="Enter Password for Owner" required style="width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
                         <button type="submit" name="setup">Setup Owner Account</button>
                     </form>
                 <?php endif; ?>
@@ -154,19 +172,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
     $employee_role = trim($_POST['employee_role']);
     $employee_email = trim($_POST['employee_email']);
     $employee_salary = floatval($_POST['employee_salary']);
+    $employee_password = $_POST['employee_password'];
 
-    // Insert employee data (no userid, no password)
-    $sql = "INSERT INTO employees (employee_type, email, salary, hire_date) VALUES (?, ?, ?, CURDATE())";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssd", $employee_role, $employee_email, $employee_salary);
-
-    if ($stmt->execute()) {
-        $success = "Employee added successfully!";
-        $action = 'list';
+    // Validate password
+    if (empty($employee_password)) {
+        $error = "Password is required!";
     } else {
-        $error = "Error: " . $stmt->error;
+        // Hash password automatically
+        $hashed_password = password_hash($employee_password, PASSWORD_DEFAULT);
+
+        // Insert employee data with password
+        $sql = "INSERT INTO employees (employee_type, email, salary, employee_password, hire_date) VALUES (?, ?, ?, ?, CURDATE())";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssds", $employee_role, $employee_email, $employee_salary, $hashed_password);
+
+        if ($stmt->execute()) {
+            $success = "Employee added successfully!";
+            $action = 'list';
+        } else {
+            $error = "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // Handle edit employee form submission
@@ -207,7 +234,12 @@ if (($action == 'edit' || $action == 'view') && isset($_GET['id'])) {
 // Fetch all employees for list
 $employees_result = null;
 if ($action == 'list') {
-    $employees_result = $conn->query("SELECT employee_id, employee_type, email, salary FROM employees ORDER BY employee_id");
+    $query = "SELECT employee_id, employee_type, email, salary FROM employees ORDER BY employee_id";
+    $employees_result = $conn->query($query);
+    if (!$employees_result) {
+        $error = "Error fetching employees: " . $conn->error;
+        $employees_result = null; // Set to null to prevent errors in the view
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -274,6 +306,7 @@ if ($action == 'list') {
             </select>
             <input type="email" name="employee_email" placeholder="Email" required>
             <input type="number" step="0.01" name="employee_salary" placeholder="Salary (USD)" required>
+            <input type="password" name="employee_password" placeholder="Enter Password" required>
             <button type="submit" name="add_employee">Add Employee</button>
         </form>
 
@@ -356,4 +389,5 @@ if ($action == 'list') {
 
 </body>
 </html>
+<?php ob_end_flush(); ?>
 

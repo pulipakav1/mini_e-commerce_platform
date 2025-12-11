@@ -89,33 +89,38 @@ if (!$table_exists) {
 
 $error = "";
 
-// Handle employee login (no password required, login by employee ID)
+// Handle employee login (with password required)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
-    $employee_id = intval($_POST['employee_id']);
+    $employee_type = trim($_POST['employee_type']);
+    $password = $_POST['password'];
 
-    $sql = "SELECT * FROM employees WHERE employee_id = ?";
+    $sql = "SELECT * FROM employees WHERE employee_type = ? LIMIT 1";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("SQL Prepare Failed: " . $conn->error);
     }
-    $stmt->bind_param("i", $employee_id);
+    $stmt->bind_param("s", $employee_type);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows == 1) {
         $row = $result->fetch_assoc();
         
-        // Login without password - just employee ID
-        $_SESSION['admin_id'] = $row['employee_id'];
-        $_SESSION['admin_role'] = $row['employee_type'];
-        if (isset($row['email'])) {
-            $_SESSION['admin_email'] = $row['email'];
-        }
+        // Verify password
+        if (isset($row['employee_password']) && password_verify($password, $row['employee_password'])) {
+            $_SESSION['admin_id'] = $row['employee_id'];
+            $_SESSION['admin_role'] = $row['employee_type'];
+            if (isset($row['email'])) {
+                $_SESSION['admin_email'] = $row['email'];
+            }
 
-        header("Location: dashboard.php");
-        exit();
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Incorrect password!";
+        }
     } else {
-        $error = "Employee not found!";
+        $error = "No employee found with this role!";
     }
     $stmt->close();
 }
@@ -147,7 +152,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             text-align: center;
             margin-bottom: 20px;
         }
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], select {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -165,6 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             border-radius: 5px;
             cursor: pointer;
             font-size: 15px;
+            margin-top: 10px;
         }
         button:hover {
             background: #0d62d2;
@@ -192,12 +198,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
 
 <div class="login-container">
     <h2>Employee Login</h2>
-    <p style="text-align:center; color:#666; margin-bottom:20px; font-size:14px;">Login for Owner, Business Manager, or Inventory Manager</p>
 
     <?php if ($error != "") { echo '<div class="error">'.$error.'</div>'; } ?>
 
     <form method="POST">
-        <input type="number" name="employee_id" placeholder="Enter Employee ID" required>
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">EMPLOYEE TYPE</label>
+        <select name="employee_type" required>
+            <option value="">Select Employee Type</option>
+            <option value="inventory_manager">Inventory Manager</option>
+            <option value="owner">Owner</option>
+            <option value="business_manager">Business Manager</option>
+        </select>
+        <input type="password" name="password" placeholder="Enter Password" required>
         <button type="submit" name="admin_login">Login</button>
     </form>
 

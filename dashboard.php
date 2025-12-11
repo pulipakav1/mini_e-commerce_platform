@@ -69,13 +69,11 @@ $admin_role = $_SESSION['admin_role']; // inventory_manager, business_manager, o
             <!-- Inventory Manager: Only update inventory quantities -->
             <a class="card" href="update_inventory.php">Update Inventory</a>
         <?php elseif ($admin_role == 'business_manager'): ?>
-            <!-- Business Manager: Products and Orders (Operations focused) -->
+            <!-- Business Manager: Products only -->
             <a class="card" href="products.php">Manage Products</a>
-            <a class="card" href="orders.php">Manage Orders</a>
         <?php else: ?>
             <!-- Owner: Full access including HR and Reports (Administrative) -->
             <a class="card" href="products.php">Manage Products</a>
-            <a class="card" href="orders.php">Manage Orders</a>
             <a class="card" href="hr.php">HR Section</a>
             <a class="card" href="reports.php">Reports / Analytics</a>
         <?php endif; ?>
