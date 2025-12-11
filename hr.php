@@ -2,7 +2,126 @@
 session_start();
 include 'db.php';
 
-// Check if admin is logged in
+$error = "";
+$success = "";
+$action = $_GET['action'] ?? 'list'; // Default to 'list'
+
+// Check if employees table exists
+$table_check = $conn->query("SHOW TABLES LIKE 'employees'");
+$table_exists = $table_check && $table_check->num_rows > 0;
+
+// If table doesn't exist, allow setup without login
+if (!$table_exists) {
+    // Handle setup
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['setup'])) {
+        try {
+            // Step 1: Create employees table (no password, no userid)
+            $create_table = "CREATE TABLE employees (
+                employee_id INT AUTO_INCREMENT PRIMARY KEY,
+                employee_type ENUM('inventory_manager', 'business_manager', 'owner') NOT NULL,
+                salary DECIMAL(10,2),
+                hire_date DATE,
+                email VARCHAR(255)
+            )";
+            
+            if (!$conn->query($create_table)) {
+                throw new Exception("Error creating table: " . $conn->error);
+            }
+            $success .= "✓ Employees table created.<br>";
+            
+            // Step 2: Check if owner exists, if not create it
+            $owner_check = $conn->prepare("SELECT employee_id FROM employees WHERE employee_type = 'owner'");
+            $owner_check->execute();
+            $owner_result = $owner_check->get_result();
+            
+            if ($owner_result->num_rows == 0) {
+                // Create owner account (no password, no userid)
+                $insert_owner = $conn->prepare("INSERT INTO employees (employee_type, email, salary, hire_date) VALUES (?, ?, ?, CURDATE())");
+                $type = 'owner';
+                $email = 'owner@flowershop.com';
+                $salary = 100000.00;
+                
+                $insert_owner->bind_param("ssd", $type, $email, $salary);
+                
+                if ($insert_owner->execute()) {
+                    $success .= "✓ Owner account created successfully!<br>";
+                    $table_exists = true; // Refresh check
+                } else {
+                    throw new Exception("Error creating owner: " . $insert_owner->error);
+                }
+                $insert_owner->close();
+            } else {
+                $success .= "✓ Owner account already exists.<br>";
+                $table_exists = true;
+            }
+            $owner_check->close();
+            
+        } catch (Exception $e) {
+            $error = "Error: " . $e->getMessage();
+        }
+    }
+    
+    // Show setup page if table doesn't exist
+    if (!$table_exists) {
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Setup Employees</title>
+            <style>
+                body { font-family: Arial; padding: 20px; max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+                .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h2 { color: #1d4ed8; }
+                button { padding: 12px 25px; background: #1d4ed8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
+                button:hover { background: #0d62d2; }
+                .message { padding: 15px; border-radius: 6px; margin: 20px 0; }
+                .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+                .info { background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0; }
+                .credentials { background: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Setup Owner Account</h2>
+                
+                <?php if ($error): ?>
+                    <div class="message error"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="message success"><?php echo htmlspecialchars($success); ?></div>
+                    <div class="credentials">
+                        <h3>Owner Login:</h3>
+                        <p><strong>Employee ID:</strong> Check the employee list to see the owner's ID</p>
+                        <p><strong>Note:</strong> Login using Employee ID (number) - no password required</p>
+                        <p style="margin-top: 15px;">
+                            <a href="admin_login.php" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">Go to Employee Login</a>
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div class="info">
+                        <p><strong>This will:</strong></p>
+                        <ul>
+                            <li>Create the employees table (if it doesn't exist)</li>
+                            <li>Create the owner account</li>
+                            <li>No password required - login with username only</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST">
+                        <button type="submit" name="setup">Setup Owner Account</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit();
+    }
+}
+
+// After table exists, require login
 if (!isset($_SESSION['admin_id'])) {
     header("Location: auth.php");
     exit();
@@ -15,82 +134,6 @@ if ($admin_role != 'owner') {
     echo "<h2 style='color:red; text-align:center; padding:20px;'>Access Denied! HR Section is only for Owner.</h2>";
     echo "<p style='text-align:center;'><a href='dashboard.php'>Back to Dashboard</a></p>";
     exit();
-}
-
-$error = "";
-$success = "";
-$action = $_GET['action'] ?? 'list'; // Default to 'list'
-
-// Handle fix passwords action
-if ($action == 'fix_passwords') {
-    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['confirm_fix'])) {
-        // Get all employees
-        $result = $conn->query("SELECT employee_id, employee_userid, employee_password FROM employees");
-        
-        if (!$result) {
-            $error = "Error fetching employees: " . $conn->error;
-            $action = 'list';
-        } else {
-            $updated = 0;
-            $failed = 0;
-            
-            while ($row = $result->fetch_assoc()) {
-                $employee_id = $row['employee_id'];
-                $employee_userid = $row['employee_userid'];
-                $current_password = $row['employee_password'];
-                
-                // Determine password based on username
-                $new_password = 'password'; // Default for all
-                
-                if ($employee_userid == 'owner') {
-                    $new_password = 'password';
-                } elseif ($employee_userid == 'manager') {
-                    $new_password = 'password';
-                } elseif ($employee_userid == 'inventory') {
-                    $new_password = 'password';
-                } else {
-                    $new_password = 'ChangeMe123'; // Default for new employees
-                }
-                
-                // Check if password is already hashed and correct
-                $needs_update = true;
-                if (strpos($current_password, '$2y$') === 0) {
-                    // Already hashed, verify it works
-                    if (password_verify($new_password, $current_password)) {
-                        $needs_update = false;
-                    }
-                }
-                
-                if ($needs_update) {
-                    // Generate new hash
-                    $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-                    
-                    // Update database
-                    $update_stmt = $conn->prepare("UPDATE employees SET employee_password = ? WHERE employee_id = ?");
-                    $update_stmt->bind_param("si", $new_hash, $employee_id);
-                    
-                    if ($update_stmt->execute()) {
-                        // Verify it works
-                        if (password_verify($new_password, $new_hash)) {
-                            $updated++;
-                        } else {
-                            $failed++;
-                        }
-                    } else {
-                        $failed++;
-                    }
-                    $update_stmt->close();
-                }
-            }
-            
-            if ($updated > 0 || $failed == 0) {
-                $success = "Password fix completed! Updated: {$updated} employee(s). All passwords are now working correctly.";
-            } else {
-                $error = "Password fix completed with errors. Updated: {$updated}, Failed: {$failed}";
-            }
-            $action = 'list';
-        }
-    }
 }
 
 // Handle deletion
@@ -108,16 +151,14 @@ if (isset($_GET['delete_id'])) {
 
 // Handle add employee form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
-    $employee_name = trim($_POST['employee_name']);
     $employee_role = trim($_POST['employee_role']);
     $employee_email = trim($_POST['employee_email']);
     $employee_salary = floatval($_POST['employee_salary']);
 
-    $default_password = password_hash('ChangeMe123', PASSWORD_DEFAULT);
-
-    $sql = "INSERT INTO employees (employee_userid, employee_type, email, salary, employee_password, hire_date) VALUES (?, ?, ?, ?, ?, CURDATE())";
+    // Insert employee data (no userid, no password)
+    $sql = "INSERT INTO employees (employee_type, email, salary, hire_date) VALUES (?, ?, ?, CURDATE())";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssds", $employee_name, $employee_role, $employee_email, $employee_salary, $default_password);
+    $stmt->bind_param("ssd", $employee_role, $employee_email, $employee_salary);
 
     if ($stmt->execute()) {
         $success = "Employee added successfully!";
@@ -131,13 +172,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
 // Handle edit employee form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_employee'])) {
     $employee_id = intval($_POST['employee_id']);
-    $userid = trim($_POST['userid']);
     $email = trim($_POST['email']);
     $role = trim($_POST['role']);
     $salary = floatval($_POST['salary']);
 
-    $update = $conn->prepare("UPDATE employees SET employee_userid=?, email=?, employee_type=?, salary=? WHERE employee_id=?");
-    $update->bind_param("sssdi", $userid, $email, $role, $salary, $employee_id);
+    $update = $conn->prepare("UPDATE employees SET email=?, employee_type=?, salary=? WHERE employee_id=?");
+    $update->bind_param("ssdi", $email, $role, $salary, $employee_id);
     
     if ($update->execute()) {
         $success = "Employee updated successfully!";
@@ -167,7 +207,7 @@ if (($action == 'edit' || $action == 'view') && isset($_GET['id'])) {
 // Fetch all employees for list
 $employees_result = null;
 if ($action == 'list') {
-    $employees_result = $conn->query("SELECT employee_id, employee_userid, employee_type, email, salary FROM employees ORDER BY employee_id");
+    $employees_result = $conn->query("SELECT employee_id, employee_type, email, salary FROM employees ORDER BY employee_id");
 }
 ?>
 <!DOCTYPE html>
@@ -212,7 +252,6 @@ if ($action == 'list') {
 <div class="nav-tabs">
     <a href="hr.php?action=list" class="<?php echo $action == 'list' ? 'active' : ''; ?>">Employee List</a>
     <a href="hr.php?action=add" class="<?php echo $action == 'add' ? 'active' : ''; ?>">Add Employee</a>
-    <a href="hr.php?action=fix_passwords" class="<?php echo $action == 'fix_passwords' ? 'active' : ''; ?>">Fix Passwords</a>
 </div>
 
 <div class="container">
@@ -227,12 +266,11 @@ if ($action == 'list') {
     <?php if ($action == 'add'): ?>
         <h2>Add New Employee</h2>
         <form method="POST">
-            <input type="text" name="employee_name" placeholder="Employee Username" required>
             <select name="employee_role" required>
                 <option value="">Select Role</option>
+                <option value="owner">Owner</option>
                 <option value="inventory_manager">Inventory Manager</option>
                 <option value="business_manager">Business Manager</option>
-                <option value="owner">Owner</option>
             </select>
             <input type="email" name="employee_email" placeholder="Email" required>
             <input type="number" step="0.01" name="employee_salary" placeholder="Salary (USD)" required>
@@ -243,34 +281,14 @@ if ($action == 'list') {
         <h2>Edit Employee</h2>
         <form method="POST">
             <input type="hidden" name="employee_id" value="<?php echo $employee['employee_id']; ?>">
-            <input type="text" name="userid" value="<?php echo htmlspecialchars($employee['employee_userid'] ?? ''); ?>" placeholder="Employee Username" required>
-            <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email'] ?? ''); ?>" placeholder="Email" required>
             <select name="role" required>
+                <option value="owner" <?php echo ($employee['employee_type'] ?? '') == 'owner' ? 'selected' : ''; ?>>Owner</option>
                 <option value="inventory_manager" <?php echo ($employee['employee_type'] ?? '') == 'inventory_manager' ? 'selected' : ''; ?>>Inventory Manager</option>
                 <option value="business_manager" <?php echo ($employee['employee_type'] ?? '') == 'business_manager' ? 'selected' : ''; ?>>Business Manager</option>
-                <option value="owner" <?php echo ($employee['employee_type'] ?? '') == 'owner' ? 'selected' : ''; ?>>Owner</option>
             </select>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($employee['email'] ?? ''); ?>" placeholder="Email" required>
             <input type="number" step="0.01" name="salary" value="<?php echo htmlspecialchars($employee['salary'] ?? '0'); ?>" placeholder="Salary (USD)" required>
             <button type="submit" name="update_employee">Update Employee</button>
-        </form>
-
-    <?php elseif ($action == 'fix_passwords'): ?>
-        <h2>Fix Employee Passwords</h2>
-        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-            <p><strong>What this does:</strong></p>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>Updates all employee passwords with correct hashes</li>
-                <li>Sets default passwords for standard accounts (owner, manager, inventory)</li>
-                <li>Verifies each password works correctly</li>
-            </ul>
-            <p style="margin-top: 10px;"><strong>Default passwords after fix:</strong></p>
-            <ul style="margin: 10px 0; padding-left: 20px;">
-                <li><strong>owner</strong>, <strong>manager</strong>, <strong>inventory</strong>: Password is 'password'</li>
-                <li><strong>Other employees</strong>: Password is 'ChangeMe123'</li>
-            </ul>
-        </div>
-        <form method="POST" onsubmit="return confirm('Are you sure you want to update all employee passwords? This will reset them to default values.');">
-            <button type="submit" name="confirm_fix" style="background: #10b981; padding: 12px 25px; font-size: 16px;">Fix All Employee Passwords</button>
         </form>
 
     <?php elseif ($action == 'view' && $employee): ?>
@@ -280,13 +298,10 @@ if ($action == 'list') {
                 <span class="detail-label">Employee ID:</span> <?php echo htmlspecialchars($employee['employee_id']); ?>
             </div>
             <div class="detail-row">
-                <span class="detail-label">User ID:</span> <?php echo htmlspecialchars($employee['employee_userid'] ?? 'N/A'); ?>
+                <span class="detail-label">Role:</span> <?php echo htmlspecialchars($employee['employee_type']); ?>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Email:</span> <?php echo htmlspecialchars($employee['email'] ?? 'N/A'); ?>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Role:</span> <?php echo htmlspecialchars($employee['employee_type']); ?>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Salary:</span> <span class="salary">$<?php echo number_format($employee['salary'] ?? 0, 2); ?></span>
@@ -309,9 +324,9 @@ if ($action == 'list') {
                 <thead>
                     <tr>
                         <th>Employee ID</th>
-                        <th>Username</th>
                         <th>Role</th>
                         <th>Email</th>
+                        <th>Salary</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -319,9 +334,9 @@ if ($action == 'list') {
                     <?php while ($row = $employees_result->fetch_assoc()): ?>
                         <tr>
                             <td><?php echo $row['employee_id']; ?></td>
-                            <td><?php echo htmlspecialchars($row['employee_userid']); ?></td>
                             <td><?php echo htmlspecialchars($row['employee_type']); ?></td>
                             <td><?php echo htmlspecialchars($row['email'] ?? 'N/A'); ?></td>
+                            <td>$<?php echo number_format($row['salary'] ?? 0, 2); ?></td>
                             <td>
                                 <a href="hr.php?action=view&id=<?php echo $row['employee_id']; ?>" class="action-btn">View</a>
                                 <a href="hr.php?action=edit&id=<?php echo $row['employee_id']; ?>" class="action-btn">Edit</a>

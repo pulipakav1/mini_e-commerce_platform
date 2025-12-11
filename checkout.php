@@ -81,14 +81,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             
             // Create order
             $order_stmt = $conn->prepare("INSERT INTO orders (user_id, address, total_amount) VALUES (?, ?, ?)");
+            if (!$order_stmt) {
+                throw new Exception("Failed to prepare order statement: " . $conn->error);
+            }
+            
             $order_stmt->bind_param("isd", $user_id, $user_address, $total_amount);
             
             if (!$order_stmt->execute()) {
-                throw new Exception("Failed to create order: " . $order_stmt->error);
+                $error_msg = "Failed to create order: " . $order_stmt->error;
+                $order_stmt->close();
+                throw new Exception($error_msg);
             }
             
             $order_id = $order_stmt->insert_id;
             $order_stmt->close();
+            
+            // Verify order_id was set - CRITICAL CHECK
+            if (empty($order_id) || $order_id == 0) {
+                error_log("Checkout ERROR: insert_id is 0 or empty. User: $user_id, Total: $total_amount");
+                
+                // Fallback: Try to get the last inserted order for this user
+                $fallback_stmt = $conn->prepare("SELECT order_id FROM orders WHERE user_id = ? ORDER BY order_id DESC LIMIT 1");
+                if ($fallback_stmt) {
+                    $fallback_stmt->bind_param("i", $user_id);
+                    if ($fallback_stmt->execute()) {
+                        $fallback_result = $fallback_stmt->get_result();
+                        if ($fallback_result->num_rows > 0) {
+                            $fallback_order = $fallback_result->fetch_assoc();
+                            $order_id = $fallback_order['order_id'];
+                            error_log("Checkout: Retrieved order_id from fallback query: $order_id");
+                        }
+                    }
+                    $fallback_stmt->close();
+                }
+                
+                // If still 0, throw exception
+                if (empty($order_id) || $order_id == 0) {
+                    throw new Exception("Order was created but insert_id is invalid (0). This usually means the INSERT failed or the table doesn't have AUTO_INCREMENT.");
+                }
+            }
+            
+            // Debug log
+            error_log("Checkout: Order created successfully with ID: $order_id for user: $user_id");
             
             // Create order items and update inventory
             $cart_check_result->data_seek(0);
@@ -178,6 +212,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             
             $cart_check_stmt->close();
             
+            // Verify order_id one more time before redirect
+            if (empty($order_id) || $order_id == 0) {
+                throw new Exception("Invalid order_id before redirect: $order_id. Order may not have been created.");
+            }
+            
             // Clean any output before redirect
             while (ob_get_level() > 0) {
                 ob_end_clean();
@@ -186,13 +225,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             // Debug: Log the redirect
             error_log("Checkout: Redirecting to order_confirmation.php with order_id=$order_id and receipt=$receipt_number");
             
-            // Redirect to order confirmation
+            // Redirect to order confirmation - use absolute URL to ensure it works
             $redirect_url = "order_confirmation.php?order_id=" . intval($order_id) . "&receipt=" . urlencode($receipt_number);
-            
-            // Verify order was created successfully
-            if (empty($order_id) || $order_id == 0) {
-                throw new Exception("Invalid order_id after creation: $order_id");
-            }
             
             // Verify redirect URL is valid
             if (empty($redirect_url)) {
@@ -201,7 +235,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             
             // Check if headers already sent
             if (headers_sent($file, $line)) {
-                die("ERROR: Headers already sent in $file on line $line. Cannot redirect to order confirmation.");
+                error_log("ERROR: Headers already sent in $file on line $line");
+                // If headers already sent, output JavaScript redirect instead
+                echo "<script>window.location.href='" . htmlspecialchars($redirect_url, ENT_QUOTES) . "';</script>";
+                echo "<noscript><meta http-equiv='refresh' content='0;url=" . htmlspecialchars($redirect_url, ENT_QUOTES) . "'></noscript>";
+                exit();
             }
             
             // Perform redirect

@@ -1,6 +1,6 @@
 <?php
-session_start(); // Start the session
-include 'db.php'; // Ensure the path to db.php is correct
+session_start();
+include 'db.php';
 
 // If admin is already logged in, redirect to dashboard
 if (isset($_SESSION['admin_id'])) {
@@ -8,58 +8,112 @@ if (isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// If user is logged in, redirect to login (they need to logout first)
-if (isset($_SESSION['user_id'])) {
-        header("Location: auth.php");
+// Check if employees table exists
+$table_check = $conn->query("SHOW TABLES LIKE 'employees'");
+$table_exists = $table_check && $table_check->num_rows > 0;
+
+// If table doesn't exist, show setup message
+if (!$table_exists) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Setup Required</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: Arial;
+                background: #f0f2f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+            .setup-container {
+                background: #fff;
+                padding: 40px;
+                width: 500px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+                text-align: center;
+            }
+            h2 {
+                color: #1d4ed8;
+                margin-bottom: 20px;
+            }
+            p {
+                color: #666;
+                margin-bottom: 25px;
+                line-height: 1.6;
+            }
+            .setup-btn {
+                display: inline-block;
+                padding: 12px 30px;
+                background: #1d4ed8;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                font-size: 15px;
+            }
+            .setup-btn:hover {
+                background: #0d62d2;
+            }
+            .link {
+                margin-top: 20px;
+                font-size: 14px;
+            }
+            .link a {
+                color: #1d4ed8;
+                text-decoration: none;
+            }
+            .link a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="setup-container">
+            <h2>Setup Required</h2>
+            <p>The employees table has not been set up yet. Please set up the owner account first before logging in.</p>
+            <a href="hr.php" class="setup-btn">Go to Setup Page</a>
+            <div class="link">
+                <a href="auth.php">Back to Customer Login</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
     exit();
 }
 
-$error = ""; // Variable to store login error message
+$error = "";
 
-// Handle admin login
+// Handle employee login (no password required, login by employee ID)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
-    $admin_userid = trim($_POST['admin_userid']); // Get the admin_userid from the form
-    $password = $_POST['password']; // Get the password from the form
+    $employee_id = intval($_POST['employee_id']);
 
-    // Prepare SQL statement to check if the employee exists (using employees table)
-    $sql = "SELECT * FROM employees WHERE employee_userid = ?";
+    $sql = "SELECT * FROM employees WHERE employee_id = ?";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         die("SQL Prepare Failed: " . $conn->error);
     }
-    $stmt->bind_param("s", $admin_userid); // Bind employee_userid to the query
+    $stmt->bind_param("i", $employee_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows == 1) { // Check if the employee exists
-        $row = $result->fetch_assoc(); // Fetch employee data
-
-        // Verify password
-        if (isset($row['employee_password']) && password_verify($password, $row['employee_password'])) {
-            // Set session variables for employee info
-            $_SESSION['admin_id'] = $row['employee_id'];
-            $_SESSION['admin_userid'] = $row['employee_userid'];
-            $_SESSION['admin_role'] = $row['employee_type']; // Sets role: owner, business_manager, or inventory_manager
-            if (isset($row['email'])) {
-                $_SESSION['admin_email'] = $row['email']; // Store the employee's email
-            }
-
-            // All employees redirect to dashboard, but dashboard shows different views based on role
-            // - owner: Full access (Products, Orders, HR, Reports)
-            // - business_manager: Products, Orders, HR
-            // - inventory_manager: Products only
-            header("Location: dashboard.php");
-            exit(); // Ensure the script stops after the redirect
-        } else {
-            // Debug: Check if password hash exists and is valid format
-            if (empty($row['employee_password'])) {
-                $error = "Employee account has no password set. Please contact administrator.";
-            } elseif (strpos($row['employee_password'], '$2y$') !== 0) {
-                $error = "Password format error. Please run fix_employee_passwords.php to update passwords.";
-            } else {
-                $error = "Incorrect password!";
-            }
+    if ($result->num_rows == 1) {
+        $row = $result->fetch_assoc();
+        
+        // Login without password - just employee ID
+        $_SESSION['admin_id'] = $row['employee_id'];
+        $_SESSION['admin_role'] = $row['employee_type'];
+        if (isset($row['email'])) {
+            $_SESSION['admin_email'] = $row['email'];
         }
+
+        header("Location: dashboard.php");
+        exit();
     } else {
         $error = "Employee not found!";
     }
@@ -100,6 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 14px;
+            box-sizing: border-box;
         }
         button {
             width: 100%;
@@ -118,18 +173,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             color: red;
             text-align: center;
             margin-bottom: 15px;
-        }
-        .forgot {
-            text-align: right;
-            font-size: 13px;
-            margin-bottom: 15px;
-        }
-        .forgot a {
-            color: #1877f2;
-            text-decoration: none;
-        }
-        .forgot a:hover {
-            text-decoration: underline;
         }
         .link {
             text-align: center;
@@ -154,8 +197,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
     <?php if ($error != "") { echo '<div class="error">'.$error.'</div>'; } ?>
 
     <form method="POST">
-        <input type="text" name="admin_userid" placeholder="Employee User ID" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <input type="number" name="employee_id" placeholder="Enter Employee ID" required>
         <button type="submit" name="admin_login">Login</button>
     </form>
 

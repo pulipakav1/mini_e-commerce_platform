@@ -8,7 +8,7 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-$admin_userid = $_SESSION['admin_userid'];
+$admin_id = $_SESSION['admin_id'];
 $admin_role = $_SESSION['admin_role']; // inventory_manager, business_manager, owner
 ?>
 
@@ -34,7 +34,7 @@ $admin_role = $_SESSION['admin_role']; // inventory_manager, business_manager, o
 <div class="dashboard">
 
     <div class="logout">
-        Logged in as <strong><?php echo htmlspecialchars($admin_userid); ?></strong> |
+        Logged in as <strong>Employee ID: <?php echo htmlspecialchars($admin_id); ?></strong> |
         <a href="logout.php">Logout</a>
     </div>
 
