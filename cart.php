@@ -3,13 +3,111 @@ session_start();
 include "db.php";
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: auth.php");
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
 $message = isset($_GET['message']) ? $_GET['message'] : "";
+$action = $_GET['action'] ?? '';
 
+// Handle add to cart or buy now (from product pages)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['product_id'])) {
+    $product_id = intval($_POST['product_id']);
+    $quantity = intval($_POST['quantity'] ?? 1);
+    
+    if ($quantity <= 0) {
+        $quantity = 1;
+    }
+    
+    $stmt = $conn->prepare("SELECT product_id, product_name, cost, quantity FROM products WHERE product_id = ?");
+    $stmt->bind_param("i", $product_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows == 0) {
+        $message = "Product not found";
+        $redirect = $_POST['redirect'] ?? 'home.php';
+        header("Location: " . $redirect . (strpos($redirect, '?') !== false ? '&' : '?') . "message=" . urlencode($message));
+        exit();
+    }
+    
+    $product = $result->fetch_assoc();
+    
+    if ($product['quantity'] < $quantity) {
+        $message = "Only " . $product['quantity'] . " available";
+        $redirect = $_POST['redirect'] ?? 'home.php';
+        header("Location: " . $redirect . (strpos($redirect, '?') !== false ? '&' : '?') . "message=" . urlencode($message));
+        exit();
+    }
+    
+    if ($action == 'buy_now') {
+        // Clear cart first for buy now
+        $clear_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
+        $clear_cart->bind_param("i", $user_id);
+        $clear_cart->execute();
+        $clear_cart->close();
+        
+        // Add product to cart
+        $insert_stmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
+        $insert_stmt->bind_param("iii", $user_id, $product_id, $quantity);
+        
+        if ($insert_stmt->execute()) {
+            $insert_stmt->close();
+            header("Location: checkout.php");
+            exit();
+        } else {
+            header("Location: home.php?message=" . urlencode("Error adding to cart"));
+            exit();
+        }
+    } else {
+        // Add to cart (normal flow)
+        $check_stmt = $conn->prepare("SELECT cart_id, quantity FROM cart WHERE user_id = ? AND product_id = ?");
+        $check_stmt->bind_param("ii", $user_id, $product_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows > 0) {
+            $cart_item = $check_result->fetch_assoc();
+            $new_quantity = $cart_item['quantity'] + $quantity;
+            
+            if ($new_quantity > $product['quantity']) {
+                $message = "Only " . $product['quantity'] . " in stock. You have " . $cart_item['quantity'] . " in cart";
+            } else {
+                $update_stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ?");
+                $update_stmt->bind_param("ii", $new_quantity, $cart_item['cart_id']);
+                if ($update_stmt->execute()) {
+                    $update_stmt->close();
+                    $message = "Updated";
+                } else {
+                    $message = "Error updating cart: " . $update_stmt->error;
+                    $update_stmt->close();
+                }
+            }
+        } else {
+            $insert_stmt = $conn->prepare("INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)");
+            $insert_stmt->bind_param("iii", $user_id, $product_id, $quantity);
+            if ($insert_stmt->execute()) {
+                $insert_stmt->close();
+                $message = "Added to cart";
+            } else {
+                $message = "Error adding to cart: " . $insert_stmt->error;
+                $insert_stmt->close();
+            }
+        }
+        
+        $redirect = $_POST['redirect'] ?? 'home.php';
+        // Validate redirect to prevent open redirect vulnerability
+        if (preg_match('/^(home\.php|cart\.php|category\.php)/', $redirect) || strpos($redirect, 'category.php?id=') !== false || strpos($redirect, 'home.php?action=search') !== false || strpos($redirect, 'home.php') !== false) {
+            header("Location: " . $redirect . (strpos($redirect, '?') !== false ? '&' : '?') . "message=" . urlencode($message));
+        } else {
+            header("Location: home.php?message=" . urlencode($message));
+        }
+        exit();
+    }
+}
+
+// Handle update cart (existing functionality)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_cart'])) {
     // Handle multiple cart items update using arrays
     if (isset($_POST['cart_id']) && is_array($_POST['cart_id']) && isset($_POST['quantity']) && is_array($_POST['quantity'])) {

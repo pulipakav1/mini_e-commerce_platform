@@ -4,7 +4,7 @@ include "db.php";
 
 // Check login
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: auth.php");
     exit();
 }
 
@@ -73,7 +73,7 @@ $billing_address = isset($user['billing_address']) ? htmlspecialchars($user['bil
         </div>
     </div>
 
-    <button class="logout-btn" onclick="location.href='logout.php'">Logout</button>
+    <button class="logout-btn" onclick="location.href='auth.php?action=logout'">Logout</button>
 </div>
 
 <!-- USER DETAILS SECTION -->

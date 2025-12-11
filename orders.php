@@ -1,10 +1,10 @@
 <?php
 session_start();
-include '../db.php'; // Ensure the path to db.php is correct
+include 'db.php'; // Ensure the path to db.php is correct
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
+    header("Location: auth.php");
     exit();
 }
 
@@ -26,8 +26,8 @@ if (isset($_GET['delete_id'])) {
     $img_query->execute();
     $img_result = $img_query->get_result();
     while ($img_row = $img_result->fetch_assoc()) {
-        if (!empty($img_row['file_path']) && file_exists('../' . $img_row['file_path'])) {
-            unlink('../' . $img_row['file_path']);
+        if (!empty($img_row['file_path']) && file_exists($img_row['file_path'])) {
+            unlink($img_row['file_path']);
         }
     }
     // Delete from images table
@@ -216,7 +216,7 @@ if (isset($_GET['search'])) {
                             $prod_img_data = $prod_img_result->fetch_assoc();
                             if($prod_img_data && !empty($prod_img_data['file_path'])): 
                             ?>
-                                <img src="../<?php echo htmlspecialchars($prod_img_data['file_path']); ?>" alt="Product Image" class="product-img">
+                                <img src="<?php echo htmlspecialchars($prod_img_data['file_path']); ?>" alt="Product Image" class="product-img">
                             <?php else: ?>
                                 N/A
                             <?php endif; ?>
@@ -224,8 +224,8 @@ if (isset($_GET['search'])) {
                         <td><?php echo $row['cost']; ?></td>
                         <td><?php echo $row['quantity']; ?></td>
                         <td>
-                            <a href="edit_product.php?id=<?php echo $row['product_id']; ?>" class="action-btn">Edit</a>
-                            <a href="view_products.php?delete_id=<?php echo $row['product_id']; ?>" class="action-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                            <a href="products.php?action=edit&id=<?php echo $row['product_id']; ?>" class="action-btn">Edit</a>
+                            <a href="products.php?delete_id=<?php echo $row['product_id']; ?>" class="action-btn" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
                         </td>
                     </tr>
                 <?php endwhile; ?>

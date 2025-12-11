@@ -1,6 +1,6 @@
 <?php
 session_start(); // Start the session
-include '../db.php'; // Ensure the path to db.php is correct
+include 'db.php'; // Ensure the path to db.php is correct
 
 // If admin is already logged in, redirect to dashboard
 if (isset($_SESSION['admin_id'])) {
@@ -10,7 +10,7 @@ if (isset($_SESSION['admin_id'])) {
 
 // If user is logged in, redirect to login (they need to logout first)
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../login.php");
+        header("Location: auth.php");
     exit();
 }
 
@@ -19,6 +19,7 @@ $error = ""; // Variable to store login error message
 // Handle admin login
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
     $admin_userid = trim($_POST['admin_userid']); // Get the admin_userid from the form
+    $password = $_POST['password']; // Get the password from the form
 
     // Prepare SQL statement to check if the employee exists (using employees table)
     $sql = "SELECT * FROM employees WHERE employee_userid = ?";
@@ -33,21 +34,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
     if ($result->num_rows == 1) { // Check if the employee exists
         $row = $result->fetch_assoc(); // Fetch employee data
 
-        // Set session variables for employee info
-        $_SESSION['admin_id'] = $row['employee_id'];
-        $_SESSION['admin_userid'] = $row['employee_userid'];
-        $_SESSION['admin_role'] = $row['employee_type']; // employee_type is the role
-        if (isset($row['email'])) {
-            $_SESSION['admin_email'] = $row['email']; // Store the employee's email
+        // Verify password
+        if (isset($row['employee_password']) && password_verify($password, $row['employee_password'])) {
+            // Set session variables for employee info
+            $_SESSION['admin_id'] = $row['employee_id'];
+            $_SESSION['admin_userid'] = $row['employee_userid'];
+            $_SESSION['admin_role'] = $row['employee_type']; // Sets role: owner, business_manager, or inventory_manager
+            if (isset($row['email'])) {
+                $_SESSION['admin_email'] = $row['email']; // Store the employee's email
+            }
+
+            // All employees redirect to dashboard, but dashboard shows different views based on role
+            // - owner: Full access (Products, Orders, HR, Reports)
+            // - business_manager: Products, Orders, HR
+            // - inventory_manager: Products only
+            header("Location: dashboard.php");
+            exit(); // Ensure the script stops after the redirect
+        } else {
+            $error = "Incorrect password!"; // Set error if password is wrong
         }
-
-
-        // Redirect to the dashboard page
-        header("Location: dashboard.php");
-        exit(); // Ensure the script stops after the redirect
-    } else {
-        $error = "Admin not found!"; // Set error if admin does not exist
-    }
+        } else {
+            $error = "Employee not found!"; // Set error if employee does not exist
+        }
+    $stmt->close();
 }
 ?>
 
@@ -55,7 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Login</title>
+    <title>Employee Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -77,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             text-align: center;
             margin-bottom: 20px;
         }
-        input[type="text"] {
+        input[type="text"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -132,17 +141,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
 <body>
 
 <div class="login-container">
-    <h2>Admin Login</h2>
+    <h2>Employee Login</h2>
+    <p style="text-align:center; color:#666; margin-bottom:20px; font-size:14px;">Login for Owner, Business Manager, or Inventory Manager</p>
 
     <?php if ($error != "") { echo '<div class="error">'.$error.'</div>'; } ?>
 
     <form method="POST">
-        <input type="text" name="admin_userid" placeholder="Admin User ID" required>
+        <input type="text" name="admin_userid" placeholder="Employee User ID" required>
+        <input type="password" name="password" placeholder="Password" required>
         <button type="submit" name="admin_login">Login</button>
     </form>
 
     <div class="link">
-        <a href="../login.php">Back to Customer Login</a>
+        <a href="auth.php">Back to Customer Login</a>
     </div>
 </div>
 

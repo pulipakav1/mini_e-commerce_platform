@@ -8,7 +8,7 @@ if (basename($_SERVER['PHP_SELF']) == 'db.php' ||
     (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) == 'db.php')) {
     session_start();
     // Always redirect to login if accessed directly
-    header("Location: login.php");
+    header("Location: auth.php");
     exit();
 }
 

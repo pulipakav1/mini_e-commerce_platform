@@ -1,10 +1,10 @@
 <?php
 session_start();
-include '../db.php'; // Ensure the path to db.php is correct
+include 'db.php'; // Ensure the path to db.php is correct
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
+    header("Location: auth.php");
     exit();
 }
 
