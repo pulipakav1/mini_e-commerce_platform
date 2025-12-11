@@ -10,11 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $message = "";
 
-$user_stmt = $conn->prepare("SELECT shipping_address, billing_address FROM users WHERE user_id = ?");
+$user_stmt = $conn->prepare("SELECT address FROM users WHERE user_id = ?");
 $user_stmt->bind_param("i", $user_id);
 $user_stmt->execute();
 $user_result = $user_stmt->get_result();
 $user = $user_result->fetch_assoc();
+$user_address = $user['address'] ?? 'Not provided';
 
 $cart_stmt = $conn->prepare("
     SELECT c.cart_id, c.quantity, p.product_id, p.product_name, p.cost, p.quantity as stock_quantity
@@ -57,8 +58,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             }
             
             // Create order
-            $order_stmt = $conn->prepare("INSERT INTO orders (user_id, shipping_address, billing_address, total_amount) VALUES (?, ?, ?, ?)");
-            $order_stmt->bind_param("issd", $user_id, $user['shipping_address'], $user['billing_address'], $total_amount);
+            $order_stmt = $conn->prepare("INSERT INTO orders (user_id, address, total_amount) VALUES (?, ?, ?)");
+            $order_stmt->bind_param("isd", $user_id, $user_address, $total_amount);
             
             if (!$order_stmt->execute()) {
                 throw new Exception("Failed to create order: " . $order_stmt->error);
@@ -222,16 +223,9 @@ th { background: #1d4ed8; color: white; }
     </div>
     
     <div class="checkout-section">
-        <h3>Shipping Address</h3>
+        <h3>Address</h3>
         <div class="address-box">
-            <?php echo nl2br(htmlspecialchars($user['shipping_address'])); ?>
-        </div>
-    </div>
-    
-    <div class="checkout-section">
-        <h3>Billing Address</h3>
-        <div class="address-box">
-            <?php echo nl2br(htmlspecialchars($user['billing_address'])); ?>
+            <?php echo nl2br(htmlspecialchars($user_address)); ?>
         </div>
     </div>
     

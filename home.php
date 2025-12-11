@@ -77,7 +77,7 @@ else echo 'Home';
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         margin: 0;
         padding: 0;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: #f5f5f5;
         min-height: 100vh;
     }
 
@@ -126,26 +126,22 @@ else echo 'Home';
 
     .top-bar {
         width: 100%;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 15px 25px;
+        background: #ffffff;
+        padding: 12px 40px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         position: sticky;
         top: 0;
         z-index: 1001;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .logo-text {
-        font-size: 20px;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-size: 24px;
+        font-weight: 600;
+        color: #1d4ed8;
         letter-spacing: -0.5px;
     }
 
@@ -153,17 +149,16 @@ else echo 'Home';
         display: flex;
         align-items: center;
         background: #ffffff;
-        border: 2px solid #e0e7ff;
-        border-radius: 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
         padding: 8px 15px;
         width: 400px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
     }
 
     .search-box:focus-within {
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
     }
 
     .search-box input {
@@ -235,19 +230,17 @@ else echo 'Home';
         font-size: 14px;
         cursor: pointer;
         text-decoration: none;
-        color: #667eea;
-        padding: 8px 14px;
-        border-radius: 8px;
-        transition: all 0.3s ease;
+        color: #374151;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
         font-weight: 500;
         position: relative;
     }
 
     .order-icon:hover {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        background: #f3f4f6;
+        color: #1d4ed8;
     }
 
     .user-name {
@@ -258,62 +251,15 @@ else echo 'Home';
         cursor: pointer;
     }
 
-    .bottom-menu {
-        position: fixed;
-        bottom: 25px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: space-around;
-        width: 90%;
-        max-width: 500px;
-        padding: 14px 0;
-        border-radius: 25px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-        z-index: 1001;
-        border: 1px solid rgba(255,255,255,0.8);
-    }
-
-    .bottom-menu a {
-        text-decoration: none;
-        color: #9ca3af;
-        font-size: 18px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        transition: all 0.3s ease;
-        padding: 8px 20px;
-        border-radius: 15px;
-    }
-
-    .bottom-menu a:hover {
-        color: #667eea;
-        background: rgba(102, 126, 234, 0.1);
-        transform: translateY(-3px);
-    }
-
-    .bottom-menu a.active {
-        color: #667eea;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-        font-weight: 600;
-    }
-
-    .bottom-menu span {
-        font-size: 11px;
-        margin-top: 3px;
-    }
 
     .container {
-        max-width: 1000px;
-        margin: 20px auto;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        margin-bottom: 100px;
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 40px;
     }
 
     .back-link {
@@ -401,36 +347,39 @@ else echo 'Home';
     }
 
     .category-card {
-        width: 180px;
+        width: 200px;
         text-align: center;
         background: white;
         padding: 20px;
-        border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
         text-decoration: none;
         display: block;
     }
 
     .category-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border-color: #1d4ed8;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .category-card img {
         width: 100%;
-        height: 140px;
+        height: 150px;
         object-fit: cover;
-        border-radius: 12px;
+        border-radius: 6px;
         margin-bottom: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .category-name {
         margin-top: 8px;
-        font-weight: 600;
-        color: #667eea;
+        font-weight: 500;
+        color: #374151;
         font-size: 15px;
+    }
+    
+    .category-name:hover {
+        color: #1d4ed8;
     }
 
     .search-header {
@@ -480,8 +429,19 @@ else echo 'Home';
 
 <?php if ($action == 'home'): ?>
 <!-- Full Page Hero Image -->
+<?php
+$tulip_image = "images/tulip-field.jpg";
+if (!file_exists($tulip_image)) {
+    // Fallback to placeholder or gradient if image doesn't exist
+    $tulip_image = "images/placeholder.jpg";
+}
+?>
 <div class="hero-image-container">
-    <img src="images/tulip-field.jpg" alt="Tulip Field" class="hero-image">
+    <?php if (file_exists($tulip_image) || file_exists("images/tulip-field.jpg")): ?>
+        <img src="images/tulip-field.jpg" alt="Tulip Field" class="hero-image" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';">
+    <?php else: ?>
+        <div style="width:100%; height:100%; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);"></div>
+    <?php endif; ?>
     <div class="hero-overlay"></div>
 </div>
 <?php endif; ?>
@@ -652,9 +612,9 @@ else echo 'Home';
     <!-- Home - Categories -->
     <div class="categories-container" style="padding: 20px; min-height: calc(100vh - 80px);">
         <div style="text-align:center; margin-bottom: 40px; padding: 30px 20px; position: relative; z-index: 10;">
-            <a href="home.php?action=education" style="display:inline-block; padding:14px 32px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; text-decoration:none; border-radius:12px; margin-bottom:25px; font-size:16px; font-weight:600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; position: relative; z-index: 10;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">Learn About Tulips</a>
-            <h2 style="margin-top: 30px; margin-bottom: 20px; color: #ffffff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 32px; font-weight: 700; letter-spacing: -1px; position: relative; z-index: 10;">Shop by Category</h2>
-            <p style="color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); font-size: 16px; margin-bottom: 10px; position: relative; z-index: 10;">Discover our curated collection</p>
+            <a href="home.php?action=education" style="display:inline-block; padding:12px 28px; background:#1d4ed8; color:white; text-decoration:none; border-radius:6px; margin-bottom:30px; font-size:15px; font-weight:500; transition: all 0.2s ease; position: relative; z-index: 10;" onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1d4ed8'">Learn About Tulips</a>
+            <h2 style="margin-top: 30px; margin-bottom: 15px; color: #1f2937; font-size: 28px; font-weight: 600; position: relative; z-index: 10;">Shop by Category</h2>
+            <p style="color: #6b7280; font-size: 15px; margin-bottom: 10px; position: relative; z-index: 10;">Browse our collection</p>
         </div>
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; position: relative; z-index: 10;">
             <?php 
@@ -675,18 +635,13 @@ else echo 'Home';
                     echo '</a>';
                 }
             } else {
-                echo '<p style="text-align:center; width:100%; color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); position: relative; z-index: 10;">No categories found. Please add categories to the database.</p>';
+                echo '<p style="text-align:center; width:100%; color: #6b7280; position: relative; z-index: 10;">No categories found. Please add categories to the database.</p>';
             }
             ?>
         </div>
     </div>
 <?php endif; ?>
 
-<!-- BOTTOM NAVIGATION -->
-<div class="bottom-menu">
-    <a href="home.php" class="<?php echo $action == 'home' ? 'active' : ''; ?>"><span>Home</span></a>
-    <a href="profile.php"><span>Profile</span></a>
-</div>
 
 </div>
 <!-- End Content Wrapper -->

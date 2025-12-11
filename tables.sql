@@ -6,8 +6,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     role ENUM('client', 'inventory_manager', 'business_manager', 'owner') NOT NULL DEFAULT 'client',
     phone_number VARCHAR(20),
-    shipping_address TEXT NOT NULL,
-    billing_address TEXT NOT NULL,
+    address TEXT NOT NULL,
     email VARCHAR(255) UNIQUE,
     password VARCHAR(255)
 );
@@ -16,8 +15,7 @@ CREATE TABLE orders (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    billing_address TEXT NOT NULL,
-    shipping_address TEXT NOT NULL,
+    address TEXT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );

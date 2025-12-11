@@ -60,8 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signup'])) {
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
     $phone = trim($_POST['phone']);
-    $billing_address = trim($_POST['billing_address']);
-    $shipping_address = trim($_POST['shipping_address']);
+    $address = trim($_POST['address']);
 
     if ($password !== $confirm) {
         $error = "Passwords do not match!";
@@ -83,9 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signup'])) {
         $role = 'client';
 
         $stmt = $conn->prepare(
-            "INSERT INTO users (user_name, name, role, phone_number, shipping_address, billing_address, email, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO users (user_name, name, role, phone_number, address, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
-        $stmt->bind_param("ssssssss", $username, $fullname, $role, $phone, $shipping_address, $billing_address, $email, $hashed);
+        $stmt->bind_param("sssssss", $username, $fullname, $role, $phone, $address, $email, $hashed);
 
         if ($stmt->execute()) {
             $stmt->close();
@@ -343,8 +342,7 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
             <input type="password" name="password" placeholder="Password" required>
             <input type="password" name="confirm_password" placeholder="Confirm Password" required>
             <input type="text" name="phone" placeholder="Phone Number" required>
-            <textarea name="billing_address" placeholder="Billing Address" rows="3" required></textarea>
-            <textarea name="shipping_address" placeholder="Shipping Address" rows="3" required></textarea>
+            <textarea name="address" placeholder="Address" rows="3" required></textarea>
             <button type="submit" name="signup">Sign Up</button>
         </form>
         

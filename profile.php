@@ -12,9 +12,9 @@ $user_id = $_SESSION['user_id'];
 
 
 /* ------------------------------------
-   FETCH USER DATA (matching schema: user_id, name, email, phone_number, shipping_address, billing_address)
+   FETCH USER DATA (matching schema: user_id, name, email, phone_number, address)
 -------------------------------------*/
-$sql = "SELECT name, email, phone_number, shipping_address, billing_address, user_name FROM users WHERE user_id = ?";
+$sql = "SELECT name, email, phone_number, address, user_name FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
@@ -34,8 +34,7 @@ $name  = htmlspecialchars($user['name']);
 $email = isset($user['email']) ? htmlspecialchars($user['email']) : 'Not provided';
 $phone = isset($user['phone_number']) ? htmlspecialchars($user['phone_number']) : 'Not provided';
 $username = isset($user['user_name']) ? htmlspecialchars($user['user_name']) : 'Not provided';
-$shipping_address = isset($user['shipping_address']) ? htmlspecialchars($user['shipping_address']) : 'Not provided';
-$billing_address = isset($user['billing_address']) ? htmlspecialchars($user['billing_address']) : 'Not provided';
+$address = isset($user['address']) ? htmlspecialchars($user['address']) : 'Not provided';
 
 ?>
 <!DOCTYPE html>
@@ -102,13 +101,8 @@ $billing_address = isset($user['billing_address']) ? htmlspecialchars($user['bil
         </div>
         
         <div class="detail-row">
-            <div class="detail-label">Shipping Address:</div>
-            <div class="detail-value"><?php echo nl2br($shipping_address); ?></div>
-        </div>
-        
-        <div class="detail-row">
-            <div class="detail-label">Billing Address:</div>
-            <div class="detail-value"><?php echo nl2br($billing_address); ?></div>
+            <div class="detail-label">Address:</div>
+            <div class="detail-value"><?php echo nl2br($address); ?></div>
         </div>
     </div>
     
