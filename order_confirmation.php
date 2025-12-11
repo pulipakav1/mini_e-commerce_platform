@@ -1,4 +1,9 @@
 <?php
+// Start output buffering first to prevent any output issues
+if (!ob_get_level()) {
+    ob_start();
+}
+
 // Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -12,6 +17,7 @@ include "db.php";
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
+    ob_end_clean();
     header("Location: auth.php");
     exit();
 }
@@ -22,7 +28,31 @@ $receipt_number = isset($_GET['receipt']) ? htmlspecialchars($_GET['receipt']) :
 
 // Validate order ID
 if ($order_id == 0) {
-    die("<h1>Error</h1><p>No order ID provided.</p><p><a href='my_orders.php'>View Orders</a></p>");
+    ob_end_clean();
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Error - No Order ID</title>
+        <style>
+            body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+            .error-box { background: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 50px auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #dc2626; }
+            a { color: #1d4ed8; text-decoration: none; padding: 10px 20px; background: #1d4ed8; color: white; border-radius: 6px; display: inline-block; margin-top: 15px; }
+            a:hover { background: #1e40af; }
+        </style>
+    </head>
+    <body>
+        <div class="error-box">
+            <h1>Error</h1>
+            <p>No order ID provided. Please select an order to view.</p>
+            <a href='my_orders.php'>View All Orders</a>
+            <a href='home.php' style="margin-left: 10px;">Continue Shopping</a>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit();
 }
 
 // Fetch order with better error handling
@@ -46,16 +76,30 @@ $order_result = $order_stmt->get_result();
 if ($order_result->num_rows == 0) {
     $order_stmt->close();
     error_log("Order Confirmation: Order ID $order_id not found for user $user_id");
-    // Show error message instead of blank page
+    // Clean output buffer and show error message instead of blank page
+    ob_end_clean();
     ?>
     <!DOCTYPE html>
     <html>
-    <head><title>Order Not Found</title></head>
-    <body style="font-family: Arial; padding: 20px;">
-        <h1>Order Not Found</h1>
-        <p>Order ID: <?php echo htmlspecialchars($order_id); ?></p>
-        <p>User ID: <?php echo htmlspecialchars($user_id); ?></p>
-        <p><a href='my_orders.php'>View All Orders</a></p>
+    <head>
+        <title>Order Not Found</title>
+        <style>
+            body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+            .error-box { background: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 50px auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #dc2626; }
+            a { color: #1d4ed8; text-decoration: none; padding: 10px 20px; background: #1d4ed8; color: white; border-radius: 6px; display: inline-block; margin-top: 15px; }
+            a:hover { background: #1e40af; }
+        </style>
+    </head>
+    <body>
+        <div class="error-box">
+            <h1>Order Not Found</h1>
+            <p>We couldn't find the order you're looking for.</p>
+            <p><strong>Order ID:</strong> <?php echo htmlspecialchars($order_id); ?></p>
+            <p><strong>User ID:</strong> <?php echo htmlspecialchars($user_id); ?></p>
+            <a href='my_orders.php'>View All Orders</a>
+            <a href='home.php' style="margin-left: 10px;">Continue Shopping</a>
+        </div>
     </body>
     </html>
     <?php
@@ -64,6 +108,27 @@ if ($order_result->num_rows == 0) {
 
 $order = $order_result->fetch_assoc();
 $order_stmt->close();
+
+// If receipt number not provided in URL, fetch from database
+if (empty($receipt_number)) {
+    $receipt_fetch = $conn->prepare("SELECT receipt_number FROM receipts WHERE order_id = ?");
+    if ($receipt_fetch) {
+        $receipt_fetch->bind_param("i", $order_id);
+        $receipt_fetch->execute();
+        $receipt_fetch_result = $receipt_fetch->get_result();
+        if ($receipt_fetch_result->num_rows > 0) {
+            $receipt_data = $receipt_fetch_result->fetch_assoc();
+            $receipt_number = $receipt_data['receipt_number'];
+        } else {
+            // Generate receipt number if not found (fallback)
+            $receipt_number = "REC-" . str_pad($order_id, 6, "0", STR_PAD_LEFT);
+        }
+        $receipt_fetch->close();
+    } else {
+        // Fallback if query fails
+        $receipt_number = "REC-" . str_pad($order_id, 6, "0", STR_PAD_LEFT);
+    }
+}
 
 // Get payment method
 $payment_stmt = $conn->prepare("SELECT payment_method FROM payment WHERE order_id = ?");
@@ -100,7 +165,11 @@ if (!$items_stmt) {
     }
 }
 
-// Ensure no output before HTML
+// Ensure no output before HTML - clean buffer if needed
+if (ob_get_level() > 0) {
+    ob_end_clean();
+}
+ob_start(); // Start fresh buffer for HTML output
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -257,4 +326,10 @@ $tulip_image = "images/tulip-field.jpg";
 
 </body>
 </html>
+<?php
+// Flush output buffer
+if (ob_get_level() > 0) {
+    ob_end_flush();
+}
+?>
 

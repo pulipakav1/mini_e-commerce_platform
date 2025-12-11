@@ -384,6 +384,10 @@ $tulip_image = "images/tulip-field.jpg";
         </div>
     </div>
 </div>
+<!-- End Container -->
+
+</div>
+<!-- End Content Wrapper -->
 
 </body>
 </html>
