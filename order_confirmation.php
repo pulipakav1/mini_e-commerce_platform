@@ -1,10 +1,12 @@
 <?php
-ob_start(); // Start output buffering
 session_start();
 include "db.php";
 
+// Enable error reporting for debugging (remove in production)
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+
 if (!isset($_SESSION['user_id'])) {
-    ob_end_clean();
     header("Location: auth.php");
     exit();
 }
@@ -14,23 +16,32 @@ $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 $receipt_number = isset($_GET['receipt']) ? htmlspecialchars($_GET['receipt']) : "";
 
 if ($order_id == 0) {
-    ob_end_clean();
-    header("Location: my_orders.php");
+    header("Location: my_orders.php?error=no_order_id");
     exit();
 }
 
+// Fetch order with better error handling
 $order_stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = ? AND user_id = ?");
 if (!$order_stmt) {
-    die("Database error: " . $conn->error);
+    error_log("Order Confirmation Error: " . $conn->error);
+    header("Location: my_orders.php?error=db_prepare");
+    exit();
 }
+
 $order_stmt->bind_param("ii", $order_id, $user_id);
-$order_stmt->execute();
+if (!$order_stmt->execute()) {
+    error_log("Order Confirmation Error: " . $order_stmt->error);
+    $order_stmt->close();
+    header("Location: my_orders.php?error=db_execute");
+    exit();
+}
+
 $order_result = $order_stmt->get_result();
 
 if ($order_result->num_rows == 0) {
     $order_stmt->close();
-    ob_end_clean();
-    header("Location: my_orders.php");
+    error_log("Order Confirmation: Order ID $order_id not found for user $user_id");
+    header("Location: my_orders.php?error=order_not_found");
     exit();
 }
 
@@ -50,6 +61,7 @@ if (!$payment_stmt) {
     $payment_stmt->close();
 }
 
+// Fetch order items with better error handling
 $items_stmt = $conn->prepare("
     SELECT oi.*, p.product_name
     FROM order_items oi
@@ -57,13 +69,18 @@ $items_stmt = $conn->prepare("
     WHERE oi.order_id = ?
 ");
 if (!$items_stmt) {
-    die("Database error: " . $conn->error);
-}
-$items_stmt->bind_param("i", $order_id);
-$items_stmt->execute();
-$items_result = $items_stmt->get_result();
-if (!$items_result) {
-    die("Database error: " . $conn->error);
+    error_log("Order Confirmation Items Error: " . $conn->error);
+    $items_result = null;
+} else {
+    $items_stmt->bind_param("i", $order_id);
+    if (!$items_stmt->execute()) {
+        error_log("Order Confirmation Items Execute Error: " . $items_stmt->error);
+        $items_result = null;
+        $items_stmt->close();
+    } else {
+        $items_result = $items_stmt->get_result();
+        // Don't close here, we'll close after using it
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -144,8 +161,8 @@ $tulip_image = "images/tulip-field.jpg";
     
     <div class="receipt-box">
         <h3>Receipt #<?php echo htmlspecialchars($receipt_number); ?></h3>
-        <p><strong>Order ID:</strong> <?php echo $order['order_id']; ?></p>
-        <p><strong>Order Date:</strong> <?php echo date('F j, Y g:i A', strtotime($order['order_date'])); ?></p>
+        <p><strong>Order ID:</strong> <?php echo htmlspecialchars($order['order_id']); ?></p>
+        <p><strong>Order Date:</strong> <?php echo isset($order['order_date']) ? date('F j, Y g:i A', strtotime($order['order_date'])) : 'N/A'; ?></p>
     </div>
     
     <h3>Order Details</h3>
@@ -179,19 +196,24 @@ $tulip_image = "images/tulip-field.jpg";
                 </tr>
             <?php } else { ?>
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 20px;">No items found for this order.</td>
+                    <td colspan="4" style="text-align: center; padding: 20px;">No items found for this order. Order ID: <?php echo htmlspecialchars($order_id); ?></td>
                 </tr>
                 <tr class="total-row">
                     <td colspan="3" style="text-align: right;">Total:</td>
-                    <td>$<?php echo number_format($order['total_amount'], 2); ?></td>
+                    <td>$<?php echo number_format(isset($order['total_amount']) ? $order['total_amount'] : 0, 2); ?></td>
                 </tr>
-            <?php } ?>
+            <?php } 
+            // Close items statement if it was opened
+            if (isset($items_stmt) && $items_stmt) {
+                $items_stmt->close();
+            }
+            ?>
         </tbody>
     </table>
     
     <div class="receipt-box">
         <h3>Address</h3>
-        <p><?php echo nl2br(htmlspecialchars($order['address'])); ?></p>
+        <p><?php echo nl2br(htmlspecialchars(isset($order['address']) ? $order['address'] : 'Not provided')); ?></p>
         
         <h3>Payment Method</h3>
         <p><?php echo htmlspecialchars($payment_method); ?></p>
