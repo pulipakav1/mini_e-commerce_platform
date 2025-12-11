@@ -150,7 +150,7 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -158,49 +158,23 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
             padding: 20px;
         }
         .auth-container {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            padding: 50px 45px;
-            width: 450px;
+            background: #ffffff;
+            padding: 30px;
+            width: 420px;
             max-width: 90%;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
-            border: 1px solid rgba(255,255,255,0.3);
+            max-height: 95vh;
+            overflow-y: auto;
         }
         h2 {
-            font-size: 32px;
-            margin-bottom: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-            letter-spacing: -1px;
-        }
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            width: 100%;
-        }
-        .tab {
-            flex: 1;
-            padding: 12px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #1f2937;
             font-weight: 600;
-            color: #6b7280;
-            transition: all 0.3s ease;
-        }
-        .tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
         }
         form {
             width: 100%;
@@ -209,94 +183,96 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
         }
         input[type="text"], input[type="password"], input[type="email"], textarea {
             width: 100%;
-            padding: 16px 18px;
-            margin-bottom: 20px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: #f9fafb;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: #ffffff;
             font-family: inherit;
         }
         textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 60px;
+            max-height: 80px;
         }
         input:focus, textarea:focus {
-            border-color: #667eea;
+            border-color: #1d4ed8;
             outline: none;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
         }
         button[type="submit"] {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px;
+            background: #1d4ed8;
             color: #fff;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             border: none;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 5px;
         }
         button[type="submit"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            background: #1e40af;
         }
         .link {
-            margin-top: 25px;
+            margin-top: 15px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
         }
         .link a {
             text-decoration: none;
-            color: #667eea;
-            font-weight: 600;
+            color: #1d4ed8;
+            font-weight: 500;
             transition: color 0.2s;
         }
         .link a:hover {
-            color: #764ba2;
+            color: #1e40af;
         }
         .error {
             color: #ef4444;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             background: #fee;
             border: 1px solid #fcc;
-            border-radius: 8px;
+            border-radius: 6px;
             width: 100%;
+            font-size: 13px;
         }
         .success {
             color: #155724;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             background: #d4edda;
             border: 1px solid #c3e6cb;
-            border-radius: 8px;
+            border-radius: 6px;
             width: 100%;
+            font-size: 13px;
         }
         .employee-section {
             margin-top: 20px;
             text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
             width: 100%;
         }
         .employee-section p {
-            color: #666;
-            margin-bottom: 10px;
-            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
         .employee-section a {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 10px;
+            background: #10b981;
             color: white;
             border: none;
+            font-size: 14px;
             border-radius: 10px;
             cursor: pointer;
             font-size: 16px;
@@ -308,8 +284,7 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
         .employee-section a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            background: #059669;
         }
     </style>
 </head>
@@ -317,13 +292,7 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
 
 <div class="auth-container">
 
-    <h2><?php echo $action == 'signup' ? 'Sign Up' : 'Login'; ?></h2>
-
-    <!-- Tabs for switching between login and signup -->
-    <div class="tabs">
-        <button class="tab <?php echo $action == 'login' ? 'active' : ''; ?>" onclick="window.location.href='auth.php'">Login</button>
-        <button class="tab <?php echo $action == 'signup' ? 'active' : ''; ?>" onclick="window.location.href='auth.php?action=signup'">Sign Up</button>
-    </div>
+    <h2><?php echo $action == 'signup' ? 'Create Account' : 'Login'; ?></h2>
 
     <?php if ($success != "") { ?>
         <div class="success"><?php echo htmlspecialchars($success); ?></div>
@@ -367,7 +336,7 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
     <!-- Employee Login Option -->
     <div class="employee-section">
         <p>Employee Login</p>
-        <p style="color: #999; margin-bottom: 15px; font-size: 12px;">For Owner, Business Manager, or Inventory Manager</p>
+        <p style="color: #999; margin-bottom: 10px; font-size: 11px;">For Owner, Business Manager, or Inventory Manager</p>
         <a href="admin_login.php">Login as Employee</a>
     </div>
 
