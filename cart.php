@@ -204,10 +204,42 @@ $total_amount = 0;
 <style>
 body { 
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+    background: #f5f5f5;
     margin: 0; 
     padding: 0; 
     min-height: 100vh;
+}
+
+.hero-image-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    z-index: 1;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 10;
 }
 .container { 
     max-width: 1000px; 
@@ -435,6 +467,9 @@ input[type="number"]:focus {
         </div>
     <?php endif; ?>
 </div>
+
+</div>
+<!-- End Content Wrapper -->
 
 </body>
 </html>

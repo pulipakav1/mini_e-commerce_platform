@@ -68,14 +68,48 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
     margin:0; 
     padding:0; 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #f5f5f5;
     min-height: 100vh;
+}
+
+.hero-image-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    z-index: 1;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 10;
 }
 .top-bar { 
     width:100%; 
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    padding:15px 25px; 
+    padding:15px 25px;
+    position: relative;
+    z-index: 1001; 
     display:flex; 
     justify-content:space-between; 
     align-items:center; 
@@ -198,6 +232,22 @@ body {
 </style>
 </head>
 <body>
+
+<!-- Full Page Hero Image -->
+<?php
+$tulip_image = "images/tulip-field.jpg";
+?>
+<div class="hero-image-container">
+    <?php if (file_exists($tulip_image) || file_exists("images/tulip-field.jpg")): ?>
+        <img src="images/tulip-field.jpg" alt="Tulip Field" class="hero-image" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';">
+    <?php else: ?>
+        <div style="width:100%; height:100%; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);"></div>
+    <?php endif; ?>
+    <div class="hero-overlay"></div>
+</div>
+
+<!-- Content Wrapper -->
+<div class="content-wrapper">
 
 <div class="top-bar">
     <div class="logo-text">Team Toronto</div>

@@ -60,7 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signup'])) {
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
     $phone = trim($_POST['phone']);
-    $address = trim($_POST['address']);
+    $street_address = trim($_POST['street_address']);
+    $city = trim($_POST['city']);
+    $state = trim($_POST['state']);
+    $zip_code = trim($_POST['zip_code']);
+    
+    // Combine address components into single address field
+    $address = trim($street_address . ", " . $city . ", " . $state . " " . $zip_code);
 
     if ($password !== $confirm) {
         $error = "Passwords do not match!";
@@ -311,7 +317,10 @@ if (isset($_GET['signup']) && $_GET['signup'] == 'success') {
             <input type="password" name="password" placeholder="Password" required>
             <input type="password" name="confirm_password" placeholder="Confirm Password" required>
             <input type="text" name="phone" placeholder="Phone Number" required>
-            <textarea name="address" placeholder="Address" rows="3" required></textarea>
+            <input type="text" name="street_address" placeholder="Street Address" required>
+            <input type="text" name="city" placeholder="City" required>
+            <input type="text" name="state" placeholder="State" required>
+            <input type="text" name="zip_code" placeholder="Zip Code" required>
             <button type="submit" name="signup">Sign Up</button>
         </form>
         

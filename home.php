@@ -81,7 +81,6 @@ else echo 'Home';
         min-height: 100vh;
     }
 
-    <?php if ($action == 'home'): ?>
     .hero-image-container {
         position: fixed;
         top: 0;
@@ -118,11 +117,6 @@ else echo 'Home';
         position: relative;
         z-index: 10;
     }
-    <?php else: ?>
-    .content-wrapper {
-        position: relative;
-    }
-    <?php endif; ?>
 
     .top-bar {
         width: 100%;
@@ -143,6 +137,12 @@ else echo 'Home';
         font-weight: 600;
         color: #1d4ed8;
         letter-spacing: -0.5px;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .logo-text:hover {
+        color: #1e40af;
     }
 
     .search-box {
@@ -427,7 +427,6 @@ else echo 'Home';
 </head>
 <body>
 
-<?php if ($action == 'home'): ?>
 <!-- Full Page Hero Image -->
 <?php
 $tulip_image = "images/tulip-field.jpg";
@@ -444,28 +443,37 @@ if (!file_exists($tulip_image)) {
     <?php endif; ?>
     <div class="hero-overlay"></div>
 </div>
-<?php endif; ?>
 
 <!-- Content Wrapper -->
 <div class="content-wrapper">
 
 <!-- TOP BAR -->
 <div class="top-bar">
-    <div class="logo-text">Team Toronto</div>
+    <a href="home.php" class="logo-text" style="text-decoration: none;">Team Toronto</a>
 
     <!-- Search Box -->
     <div class="search-box">
         <form method="GET" action="home.php" style="display: flex; width: 100%; align-items: center;">
             <input type="hidden" name="action" value="search">
             <input type="text" name="q" placeholder="Search products..." value="<?php echo htmlspecialchars($search_term); ?>" style="border: none; background: transparent; outline: none; font-size: 13px; width: 100%; padding: 4px 6px;">
-            <button type="submit" style="background: none; border: none; font-size: 14px; margin-left: 4px; cursor: pointer; color: #666; padding: 4px 8px;">Search</button>
+            <button type="submit" style="background: none; border: none; cursor: pointer; padding: 4px 8px; display: flex; align-items: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #666;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </button>
         </form>
     </div>
 
     <!-- Orders icon + username -->
     <div class="top-right">
-        <a href="cart.php" class="order-icon" title="Cart" style="position:relative;">
-            Cart
+        <a href="cart.php" class="order-icon" title="Cart" style="position:relative; display: flex; align-items: center; gap: 5px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span>Cart</span>
             <?php
             $cart_count = 0;
             $cart_count_stmt = $conn->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
@@ -483,7 +491,16 @@ if (!file_exists($tulip_image)) {
             }
             ?>
         </a>
-        <a href="my_orders.php" class="order-icon" title="Order History">Orders</a>
+        <a href="my_orders.php" class="order-icon" title="Order History" style="display: flex; align-items: center; gap: 5px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Orders</span>
+        </a>
         <div class="user-dropdown">
             <div class="user-name"><?php echo $name; ?> ▼</div>
             <div class="dropdown-content">
@@ -620,26 +637,26 @@ if (!file_exists($tulip_image)) {
             <?php 
             if ($category_query->num_rows > 0) {
                 while($category = $category_query->fetch_assoc()) {
-                    $img_name = str_replace([' ', '&'], ['_', 'and'], $category['category_name']) . ".jpg";
-                    $img_path = "images/categories/" . $img_name;
+            $img_name = str_replace([' ', '&'], ['_', 'and'], $category['category_name']) . ".jpg";
+            $img_path = "images/categories/" . $img_name;
 
-                    if (!file_exists($img_path)) {
-                        $img_path = "images/category_placeholder.jpg";
-                    }
+            if (!file_exists($img_path)) {
+                $img_path = "images/category_placeholder.jpg";
+            }
 
                     $link = 'category.php?id=' . $category['category_id'];
 
                     echo '<a href="'.htmlspecialchars($link).'" class="category-card">';
                     echo '<img src="'.htmlspecialchars($img_path).'" alt="'.htmlspecialchars($category['category_name']).'">';
                     echo '<div class="category-name">'.htmlspecialchars($category['category_name']).'</div>';
-                    echo '</a>';
+            echo '</a>';
                 }
             } else {
                 echo '<p style="text-align:center; width:100%; color: #6b7280; position: relative; z-index: 10;">No categories found. Please add categories to the database.</p>';
-            }
-            ?>
-        </div>
+        } 
+        ?>
     </div>
+</div>
 <?php endif; ?>
 
 

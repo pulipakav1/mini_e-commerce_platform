@@ -55,7 +55,39 @@ $items_result = $items_stmt->get_result();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order Confirmation</title>
 <style>
-body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 0; }
+body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 0; min-height: 100vh; }
+
+.hero-image-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
+    z-index: 1;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 10;
+}
 .container { max-width: 800px; margin: 20px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
 .success-message { background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; }
 .success-message h2 { margin: 0 0 10px 0; color: #155724; }
@@ -69,6 +101,22 @@ th { background: #1d4ed8; color: white; }
 </style>
 </head>
 <body>
+
+<!-- Full Page Hero Image -->
+<?php
+$tulip_image = "images/tulip-field.jpg";
+?>
+<div class="hero-image-container">
+    <?php if (file_exists($tulip_image) || file_exists("images/tulip-field.jpg")): ?>
+        <img src="images/tulip-field.jpg" alt="Tulip Field" class="hero-image" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';">
+    <?php else: ?>
+        <div style="width:100%; height:100%; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);"></div>
+    <?php endif; ?>
+    <div class="hero-overlay"></div>
+</div>
+
+<!-- Content Wrapper -->
+<div class="content-wrapper">
 
 <div class="container">
     <div class="success-message">
@@ -127,6 +175,9 @@ th { background: #1d4ed8; color: white; }
         <button onclick="history.back();" class="btn" style="background: #6b7280;">← Back</button>
     </div>
 </div>
+
+</div>
+<!-- End Content Wrapper -->
 
 </body>
 </html>

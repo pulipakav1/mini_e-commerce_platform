@@ -27,6 +27,39 @@ $result_orders = $stmt->get_result();
             background: #f1f1f1;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+        }
+
+        .hero-image-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
+            z-index: 1;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
         }
 
         .container {
@@ -77,6 +110,22 @@ $result_orders = $stmt->get_result();
     </style>
 </head>
 <body>
+
+<!-- Full Page Hero Image -->
+<?php
+$tulip_image = "images/tulip-field.jpg";
+?>
+<div class="hero-image-container">
+    <?php if (file_exists($tulip_image) || file_exists("images/tulip-field.jpg")): ?>
+        <img src="images/tulip-field.jpg" alt="Tulip Field" class="hero-image" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)';">
+    <?php else: ?>
+        <div style="width:100%; height:100%; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);"></div>
+    <?php endif; ?>
+    <div class="hero-overlay"></div>
+</div>
+
+<!-- Content Wrapper -->
+<div class="content-wrapper">
 
 <div class="container">
     <h2>Your Order History</h2>
