@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 include "db.php";
 
@@ -27,6 +28,15 @@ if ($order_result->num_rows == 0) {
 }
 
 $order = $order_result->fetch_assoc();
+
+// Get payment method
+$payment_stmt = $conn->prepare("SELECT payment_method FROM payment WHERE order_id = ?");
+$payment_stmt->bind_param("i", $order_id);
+$payment_stmt->execute();
+$payment_result = $payment_stmt->get_result();
+$payment_data = $payment_result->fetch_assoc();
+$payment_method = $payment_data['payment_method'] ?? 'Cash on Delivery';
+$payment_stmt->close();
 
 $items_stmt = $conn->prepare("
     SELECT oi.*, p.product_name
@@ -108,11 +118,14 @@ th { background: #1d4ed8; color: white; }
         <p><?php echo nl2br(htmlspecialchars($order['address'])); ?></p>
         
         <h3>Payment Method</h3>
-        <p>Cash on Delivery</p>
+        <p><?php echo htmlspecialchars($payment_method); ?></p>
     </div>
     
-    <a href="my_orders.php" class="btn">View All Orders</a>
-    <a href="home.php" class="btn">Continue Shopping</a>
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="my_orders.php" class="btn">View All Orders</a>
+        <a href="home.php" class="btn">Continue Shopping</a>
+        <button onclick="history.back();" class="btn" style="background: #6b7280;">← Back</button>
+    </div>
 </div>
 
 </body>

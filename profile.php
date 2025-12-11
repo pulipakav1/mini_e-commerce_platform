@@ -56,9 +56,6 @@ $address = isset($user['address']) ? htmlspecialchars($user['address']) : 'Not p
     .detail-row:last-child { border-bottom:none; }
     .detail-label { font-weight:bold; color:#666; width:150px; }
     .detail-value { color:#333; flex:1; }
-    .bottom-menu { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); width:90%; background:#fff; display:flex; justify-content:space-around; padding:12px 0; border-radius:30px; box-shadow:0 8px 20px rgba(0,0,0,0.1);}
-    .bottom-menu a { color:#777; text-decoration:none; text-align:center; font-size:18px;}
-    .active { color:#1d4ed8 !important; }
 </style>
 </head>
 <body>
@@ -112,10 +109,8 @@ $address = isset($user['address']) ? htmlspecialchars($user['address']) : 'Not p
     </div>
 </div>
 
-<!-- BOTTOM MENU -->
-<div class="bottom-menu">
-    <a href="home.php"><br>Home</a>
-    <a href="profile.php" class="active"><br>Profile</a>
+<div style="text-align: center; margin: 30px 0;">
+    <button onclick="history.back();" style="padding: 10px 20px; background: #1d4ed8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
 </div>
 
 </body>

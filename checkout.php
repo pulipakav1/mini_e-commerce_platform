@@ -1,8 +1,10 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 include "db.php";
 
 if (!isset($_SESSION['user_id'])) {
+    ob_end_clean();
     header("Location: auth.php");
     exit();
 }
@@ -28,6 +30,7 @@ $cart_stmt->execute();
 $cart_result = $cart_stmt->get_result();
 
 if ($cart_result->num_rows == 0) {
+    ob_end_clean();
     header("Location: cart.php?message=" . urlencode("Your cart is empty!"));
     exit();
 }
@@ -127,9 +130,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             }
             $receipt_stmt->close();
             
+            
+            // Get payment method from form (default to Cash on Delivery)
+            $payment_method = isset($_POST['payment_method']) ? trim($_POST['payment_method']) : 'Cash on Delivery';
+            
             // Create payment record
-            $payment_stmt = $conn->prepare("INSERT INTO payment (order_id, payment_method, total_amount) VALUES (?, 'Cash on Delivery', ?)");
-            $payment_stmt->bind_param("id", $order_id, $total_amount);
+            $payment_stmt = $conn->prepare("INSERT INTO payment (order_id, payment_method, total_amount) VALUES (?, ?, ?)");
+            $payment_stmt->bind_param("isd", $order_id, $payment_method, $total_amount);
             
             if (!$payment_stmt->execute()) {
                 throw new Exception("Failed to create payment record: " . $payment_stmt->error);
@@ -148,7 +155,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_order'])) {
             // Commit transaction - all operations successful
             mysqli_commit($conn);
             
-            header("Location: order_confirmation.php?order_id=" . $order_id . "&receipt=" . $receipt_number);
+            // Clean any output before redirect
+            ob_end_clean();
+            
+            // Redirect to order confirmation
+            $redirect_url = "order_confirmation.php?order_id=" . intval($order_id) . "&receipt=" . urlencode($receipt_number);
+            header("Location: " . $redirect_url);
             exit();
             
         } catch (Exception $e) {
@@ -231,8 +243,27 @@ th { background: #1d4ed8; color: white; }
     
     <div class="checkout-section">
         <h3>Payment Method</h3>
-        <p><strong>Cash on Delivery</strong></p>
-        <p>You will pay when the order is delivered.</p>
+        <div class="payment-methods" style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="radio" name="payment_method" value="Cash on Delivery" checked style="margin-right: 8px; cursor: pointer;">
+                <strong>Cash on Delivery</strong>
+                <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Pay when the order is delivered</span>
+            </label>
+            <label style="display: block; margin-bottom: 15px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="radio" name="payment_method" value="Credit Card" style="margin-right: 8px; cursor: pointer;">
+                <strong>Credit Card</strong>
+                <span style="color: #666; font-size: 14px; display: block; margin-top: 5px;">Card payment processed on delivery</span>
+            </label>
+        </div>
+        <style>
+            .payment-methods label:hover {
+                border-color: #1d4ed8;
+                background-color: #f0f4ff;
+            }
+            .payment-methods input[type="radio"]:checked + strong {
+                color: #1d4ed8;
+            }
+        </style>
     </div>
     
     <div class="total-section">
@@ -240,7 +271,10 @@ th { background: #1d4ed8; color: white; }
         <form method="POST">
             <button type="submit" name="place_order" class="btn btn-success">Place Order</button>
         </form>
-        <a href="cart.php" class="btn btn-primary" style="margin-top: 10px;">Back to Cart</a>
+        <div style="margin-top: 15px; text-align: center;">
+            <a href="cart.php" class="btn btn-primary">Back to Cart</a>
+            <button onclick="history.back();" class="btn btn-primary" style="margin-left: 10px;">← Back</button>
+        </div>
     </div>
 </div>
 

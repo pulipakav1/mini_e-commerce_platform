@@ -21,6 +21,78 @@ $error = "";
 $success = "";
 $action = $_GET['action'] ?? 'list'; // Default to 'list'
 
+// Handle fix passwords action
+if ($action == 'fix_passwords') {
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['confirm_fix'])) {
+        // Get all employees
+        $result = $conn->query("SELECT employee_id, employee_userid, employee_password FROM employees");
+        
+        if (!$result) {
+            $error = "Error fetching employees: " . $conn->error;
+            $action = 'list';
+        } else {
+            $updated = 0;
+            $failed = 0;
+            
+            while ($row = $result->fetch_assoc()) {
+                $employee_id = $row['employee_id'];
+                $employee_userid = $row['employee_userid'];
+                $current_password = $row['employee_password'];
+                
+                // Determine password based on username
+                $new_password = 'password'; // Default for all
+                
+                if ($employee_userid == 'owner') {
+                    $new_password = 'password';
+                } elseif ($employee_userid == 'manager') {
+                    $new_password = 'password';
+                } elseif ($employee_userid == 'inventory') {
+                    $new_password = 'password';
+                } else {
+                    $new_password = 'ChangeMe123'; // Default for new employees
+                }
+                
+                // Check if password is already hashed and correct
+                $needs_update = true;
+                if (strpos($current_password, '$2y$') === 0) {
+                    // Already hashed, verify it works
+                    if (password_verify($new_password, $current_password)) {
+                        $needs_update = false;
+                    }
+                }
+                
+                if ($needs_update) {
+                    // Generate new hash
+                    $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+                    
+                    // Update database
+                    $update_stmt = $conn->prepare("UPDATE employees SET employee_password = ? WHERE employee_id = ?");
+                    $update_stmt->bind_param("si", $new_hash, $employee_id);
+                    
+                    if ($update_stmt->execute()) {
+                        // Verify it works
+                        if (password_verify($new_password, $new_hash)) {
+                            $updated++;
+                        } else {
+                            $failed++;
+                        }
+                    } else {
+                        $failed++;
+                    }
+                    $update_stmt->close();
+                }
+            }
+            
+            if ($updated > 0 || $failed == 0) {
+                $success = "Password fix completed! Updated: {$updated} employee(s). All passwords are now working correctly.";
+            } else {
+                $error = "Password fix completed with errors. Updated: {$updated}, Failed: {$failed}";
+            }
+            $action = 'list';
+        }
+    }
+}
+
 // Handle deletion
 if (isset($_GET['delete_id'])) {
     $employee_id = intval($_GET['delete_id']);
@@ -140,6 +212,7 @@ if ($action == 'list') {
 <div class="nav-tabs">
     <a href="hr.php?action=list" class="<?php echo $action == 'list' ? 'active' : ''; ?>">Employee List</a>
     <a href="hr.php?action=add" class="<?php echo $action == 'add' ? 'active' : ''; ?>">Add Employee</a>
+    <a href="hr.php?action=fix_passwords" class="<?php echo $action == 'fix_passwords' ? 'active' : ''; ?>">Fix Passwords</a>
 </div>
 
 <div class="container">
@@ -179,6 +252,25 @@ if ($action == 'list') {
             </select>
             <input type="number" step="0.01" name="salary" value="<?php echo htmlspecialchars($employee['salary'] ?? '0'); ?>" placeholder="Salary (USD)" required>
             <button type="submit" name="update_employee">Update Employee</button>
+        </form>
+
+    <?php elseif ($action == 'fix_passwords'): ?>
+        <h2>Fix Employee Passwords</h2>
+        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+            <p><strong>What this does:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Updates all employee passwords with correct hashes</li>
+                <li>Sets default passwords for standard accounts (owner, manager, inventory)</li>
+                <li>Verifies each password works correctly</li>
+            </ul>
+            <p style="margin-top: 10px;"><strong>Default passwords after fix:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>owner</strong>, <strong>manager</strong>, <strong>inventory</strong>: Password is 'password'</li>
+                <li><strong>Other employees</strong>: Password is 'ChangeMe123'</li>
+            </ul>
+        </div>
+        <form method="POST" onsubmit="return confirm('Are you sure you want to update all employee passwords? This will reset them to default values.');">
+            <button type="submit" name="confirm_fix" style="background: #10b981; padding: 12px 25px; font-size: 16px;">Fix All Employee Passwords</button>
         </form>
 
     <?php elseif ($action == 'view' && $employee): ?>

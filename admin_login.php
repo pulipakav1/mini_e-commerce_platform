@@ -51,11 +51,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['admin_login'])) {
             header("Location: dashboard.php");
             exit(); // Ensure the script stops after the redirect
         } else {
-            $error = "Incorrect password!"; // Set error if password is wrong
+            // Debug: Check if password hash exists and is valid format
+            if (empty($row['employee_password'])) {
+                $error = "Employee account has no password set. Please contact administrator.";
+            } elseif (strpos($row['employee_password'], '$2y$') !== 0) {
+                $error = "Password format error. Please run fix_employee_passwords.php to update passwords.";
+            } else {
+                $error = "Incorrect password!";
+            }
         }
-        } else {
-            $error = "Employee not found!"; // Set error if employee does not exist
-        }
+    } else {
+        $error = "Employee not found!";
+    }
     $stmt->close();
 }
 ?>

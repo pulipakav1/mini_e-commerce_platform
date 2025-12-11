@@ -195,10 +195,6 @@ body {
     font-weight:700; 
     font-size: 18px;
 }
-.bottom-menu { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#fff; display:flex; justify-content:space-around; width:90%; max-width:500px; padding:12px 0; border-radius:30px; box-shadow:0 8px 20px rgba(0,0,0,0.1); z-index:1000; }
-.bottom-menu a { text-decoration:none; color:#888; font-size:18px; display:flex; flex-direction:column; align-items:center; transition:0.3s; }
-.bottom-menu a.active { color:#1d4ed8; }
-.bottom-menu span { font-size:11px; margin-top:3px; }
 </style>
 </head>
 <body>
@@ -284,9 +280,8 @@ if ($product_result->num_rows > 0) {
 ?>
 </div>
 
-<div class="bottom-menu">
-    <a href="home.php"><span>Home</span></a>
-    <a href="profile.php"><span>Profile</span></a>
+<div style="text-align: center; margin: 30px 0; padding-bottom: 30px;">
+    <button onclick="history.back();" style="padding: 10px 20px; background: #1d4ed8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">← Back</button>
 </div>
 
 </body>
